@@ -24,7 +24,7 @@ CREATE TABLE `driver_details` (
     `driver_id` INT NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(40) NOT NULL,
     `licence_no` VARCHAR(20) NOT NULL,
-    `phone_no` VARCHAR(13) DEFAULT NULL,
+    `phone_no` VARCHAR(16) DEFAULT NULL,
     `address` VARCHAR(100) DEFAULT NULL,
     `salary` DECIMAL(10,2) DEFAULT 0.00,
     `status` ENUM('active','inactive') DEFAULT 'active',
@@ -48,7 +48,7 @@ CREATE TABLE `truck_details` (
 CREATE TABLE `customers` (
     `customer_id` INT NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(50) NOT NULL,
-    `phone_no` VARCHAR(13) DEFAULT NULL,
+    `phone_no` VARCHAR(16) DEFAULT NULL,
     `address` VARCHAR(100) DEFAULT NULL,
     `amount_paid` DECIMAL(12,2) DEFAULT 0.00,
     `balance` DECIMAL(12,2) DEFAULT 0.00,
