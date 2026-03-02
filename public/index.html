@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TruckBoss Pro — India's Smart Fleet Command Center</title>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ══════════════════════════  LANDING PAGE  ══════════════════════════ -->
+<section id="landingPage">
+  <nav class="landing-nav">
+    <button class="brand-btn" onclick="scrollToTop()">🚛 TruckBoss Pro</button>
+    <div class="nav-auth">
+      <button class="btn btn-outline" onclick="openModal('registerModal')">Register</button>
+      <button class="btn btn-primary" onclick="openModal('authModal')">Login</button>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <h1 class="hero-title">India's Smart Fleet<br /><span>Command Center</span></h1>
+    <p class="hero-desc">Manage your trucks, drivers, customers, trips and fuel — all from one powerful dashboard built for Indian fleet operators.</p>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <i class="ri-truck-line"></i>
+        <span>Fleet Management</span>
+      </div>
+      <div class="hero-stat">
+        <i class="ri-user-line"></i>
+        <span>Driver Tracking</span>
+      </div>
+      <div class="hero-stat">
+        <i class="ri-map-pin-2-line"></i>
+        <span>Trip Monitoring</span>
+      </div>
+      <div class="hero-stat">
+        <i class="ri-fuel-line"></i>
+        <span>Fuel Records</span>
+      </div>
+    </div>
+
+    <button class="btn btn-accent btn-lg" onclick="openModal('authModal')">
+      <i class="ri-arrow-right-circle-line"></i> Enter Fleet Control
+    </button>
+  </div>
+</section>
+
+<!-- ══════════════════════════  LOGIN MODAL  ══════════════════════════ -->
+<div id="authModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('authModal')">&times;</button>
+    <h2><i class="ri-login-circle-line"></i> Login</h2>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="admin@truckboss.in" required />
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPassword" placeholder="Enter password" required />
+          <i class="ri-eye-line toggle-password" onclick="togglePassword('loginPassword', this)"></i>
+        </div>
+      </div>
+      <label class="remember-label">
+        <input type="checkbox" id="rememberMe" /> Remember me
+      </label>
+      <button type="submit" class="btn btn-primary btn-full">Login</button>
+    </form>
+    <p class="modal-link">Don't have an account? <a href="#" onclick="switchModal('authModal','registerModal')">Register</a></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════  REGISTER MODAL  ══════════════════════════ -->
+<div id="registerModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+    <h2><i class="ri-user-add-line"></i> Register</h2>
+    <form id="registerForm" onsubmit="handleRegister(event)">
+      <div class="input-group">
+        <label>Full Name</label>
+        <input type="text" id="regName" placeholder="Your full name" />
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="regEmail" placeholder="you@company.in" required />
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="regPassword" placeholder="Choose a strong password" required />
+          <i class="ri-eye-line toggle-password" onclick="togglePassword('regPassword', this)"></i>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+    </form>
+    <p class="modal-link">Already have an account? <a href="#" onclick="switchModal('registerModal','authModal')">Login</a></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════  DASHBOARD  ══════════════════════════ -->
+<section id="dashboardPage" style="display:none">
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <button class="logo-box" onclick="navigate('dashboard')">🚛 TruckBoss</button>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-section="dashboard" onclick="navigate('dashboard')">
+          <i class="ri-dashboard-line"></i><span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-section="customers" onclick="navigate('customers')">
+          <i class="ri-group-line"></i><span>Customers</span>
+        </button>
+        <button class="nav-item" data-section="drivers" onclick="navigate('drivers')">
+          <i class="ri-steering-2-line"></i><span>Drivers</span>
+        </button>
+        <button class="nav-item" data-section="trucks" onclick="navigate('trucks')">
+          <i class="ri-truck-line"></i><span>Trucks</span>
+        </button>
+        <button class="nav-item" data-section="trips" onclick="navigate('trips')">
+          <i class="ri-map-pin-2-line"></i><span>Trips</span>
+        </button>
+        <button class="nav-item" data-section="fuel" onclick="navigate('fuel')">
+          <i class="ri-fuel-line"></i><span>Fuel</span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-area">
+      <div class="topbar">
+        <h2 id="pageTitle">Dashboard</h2>
+        <div class="topbar-right">
+          <span id="userGreeting" class="user-greeting"></span>
+          <button class="btn btn-outline" onclick="handleLogout()"><i class="ri-logout-box-line"></i> Logout</button>
+        </div>
+      </div>
+
+      <!-- ── Dashboard Section ── -->
+      <div id="sectionDashboard" class="section-content">
+        <div id="dashboardCards" class="stat-cards"></div>
+        <div class="chart-box">
+          <h3>Top 10 Customers by Revenue</h3>
+          <canvas id="revenueChart"></canvas>
+        </div>
+      </div>
+
+      <!-- ── Customers Section ── -->
+      <div id="sectionCustomers" class="section-content" style="display:none">
+        <div class="section-header">
+          <h3>Customers</h3>
+          <button class="btn btn-primary" onclick="toggleForm('customerForm')">
+            <i class="ri-add-line"></i> Add Customer
+          </button>
+        </div>
+        <div id="customerForm" class="form-panel" style="display:none">
+          <form onsubmit="submitCustomer(event)">
+            <input type="hidden" id="custId" />
+            <div class="form-grid">
+              <div class="input-group"><label>Name *</label><input type="text" id="custName" required /></div>
+              <div class="input-group"><label>Phone</label><input type="text" id="custPhone" /></div>
+              <div class="input-group"><label>Address</label><input type="text" id="custAddress" /></div>
+              <div class="input-group"><label>Amount Paid (₹)</label><input type="number" id="custAmountPaid" value="0" min="0" /></div>
+              <div class="input-group"><label>Balance (₹)</label><input type="number" id="custBalance" value="0" min="0" /></div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" class="btn btn-outline" onclick="cancelForm('customerForm', resetCustomerForm)">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <div class="table-wrap">
+          <table id="customerTable">
+            <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Address</th><th>Paid (₹)</th><th>Balance (₹)</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Drivers Section ── -->
+      <div id="sectionDrivers" class="section-content" style="display:none">
+        <div class="section-header">
+          <h3>Drivers</h3>
+          <button class="btn btn-primary" onclick="toggleForm('driverForm')">
+            <i class="ri-add-line"></i> Add Driver
+          </button>
+        </div>
+        <div id="driverForm" class="form-panel" style="display:none">
+          <form onsubmit="submitDriver(event)">
+            <input type="hidden" id="drvId" />
+            <div class="form-grid">
+              <div class="input-group"><label>Name *</label><input type="text" id="drvName" required /></div>
+              <div class="input-group"><label>Licence No *</label><input type="text" id="drvLicence" required /></div>
+              <div class="input-group"><label>Phone</label><input type="text" id="drvPhone" /></div>
+              <div class="input-group"><label>Address</label><input type="text" id="drvAddress" /></div>
+              <div class="input-group"><label>Salary (₹)</label><input type="number" id="drvSalary" value="0" min="0" /></div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" class="btn btn-outline" onclick="cancelForm('driverForm', resetDriverForm)">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <div class="table-wrap">
+          <table id="driverTable">
+            <thead><tr><th>#</th><th>Name</th><th>Licence No</th><th>Phone</th><th>Salary (₹)</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Trucks Section ── -->
+      <div id="sectionTrucks" class="section-content" style="display:none">
+        <div class="section-header">
+          <h3>Trucks</h3>
+          <button class="btn btn-primary" onclick="toggleForm('truckForm')">
+            <i class="ri-add-line"></i> Add Truck
+          </button>
+        </div>
+        <div id="truckForm" class="form-panel" style="display:none">
+          <form onsubmit="submitTruck(event)">
+            <input type="hidden" id="trkId" />
+            <div class="form-grid">
+              <div class="input-group"><label>Truck No *</label><input type="text" id="trkNo" required /></div>
+              <div class="input-group">
+                <label>Driver</label>
+                <select id="trkDriver"><option value="">-- None --</option></select>
+              </div>
+              <div class="input-group">
+                <label>Status</label>
+                <select id="trkStatus">
+                  <option value="Available">Available</option>
+                  <option value="In Use">In Use</option>
+                  <option value="Maintenance">Maintenance</option>
+                </select>
+              </div>
+              <div class="input-group"><label>Maintenance Note</label><input type="text" id="trkMaintenance" value="Not Required" /></div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" class="btn btn-outline" onclick="cancelForm('truckForm', resetTruckForm)">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <div class="table-wrap">
+          <table id="truckTable">
+            <thead><tr><th>#</th><th>Truck No</th><th>Driver</th><th>Status</th><th>Maintenance</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="chart-box">
+          <h3>Fleet Status Overview</h3>
+          <div class="doughnut-wrap"><canvas id="truckChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ── Trips Section ── -->
+      <div id="sectionTrips" class="section-content" style="display:none">
+        <div class="section-header">
+          <h3>Trips</h3>
+          <button class="btn btn-primary" onclick="toggleForm('tripForm')">
+            <i class="ri-add-line"></i> Add Trip
+          </button>
+        </div>
+        <div id="tripForm" class="form-panel" style="display:none">
+          <form onsubmit="submitTrip(event)">
+            <input type="hidden" id="trpId" />
+            <div class="form-grid">
+              <div class="input-group"><label>From City *</label><input type="text" id="trpFrom" required /></div>
+              <div class="input-group"><label>To City *</label><input type="text" id="trpTo" required /></div>
+              <div class="input-group">
+                <label>Truck</label>
+                <select id="trpTruck"><option value="">-- None --</option></select>
+              </div>
+              <div class="input-group">
+                <label>Driver</label>
+                <select id="trpDriver"><option value="">-- None --</option></select>
+              </div>
+              <div class="input-group">
+                <label>Customer</label>
+                <select id="trpCustomer"><option value="">-- None --</option></select>
+              </div>
+              <div class="input-group"><label>Amount (₹)</label><input type="number" id="trpAmount" value="0" min="0" /></div>
+              <div class="input-group">
+                <label>Status</label>
+                <select id="trpStatus">
+                  <option value="pending">Pending</option>
+                  <option value="ongoing">Ongoing</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div class="input-group"><label>Trip Date *</label><input type="date" id="trpDate" required /></div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" class="btn btn-outline" onclick="cancelForm('tripForm', resetTripForm)">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <div id="tripList" class="trip-cards"></div>
+      </div>
+
+      <!-- ── Fuel Section ── -->
+      <div id="sectionFuel" class="section-content" style="display:none">
+        <div class="section-header">
+          <h3>Fuel Records</h3>
+          <button class="btn btn-primary" onclick="toggleForm('fuelForm')">
+            <i class="ri-add-line"></i> Add Fuel
+          </button>
+        </div>
+        <div id="fuelForm" class="form-panel" style="display:none">
+          <form onsubmit="submitFuel(event)">
+            <div class="form-grid">
+              <div class="input-group">
+                <label>Truck</label>
+                <select id="fuelTruck"><option value="">-- None --</option></select>
+              </div>
+              <div class="input-group">
+                <label>Driver</label>
+                <select id="fuelDriver"><option value="">-- None --</option></select>
+              </div>
+              <div class="input-group"><label>Liters *</label><input type="number" id="fuelLiters" step="0.01" required /></div>
+              <div class="input-group"><label>Price (₹) *</label><input type="number" id="fuelPrice" step="0.01" required /></div>
+              <div class="input-group"><label>Date *</label><input type="date" id="fuelDate" required /></div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" class="btn btn-outline" onclick="cancelForm('fuelForm', resetFuelForm)">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <div class="table-wrap">
+          <table id="fuelTable">
+            <thead><tr><th>#</th><th>Truck</th><th>Driver</th><th>Liters</th><th>Price (₹)</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</section>
+
+<!-- Toast notification -->
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
