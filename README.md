@@ -68,6 +68,7 @@ npm run dev
 | DB_NAME        | trucks                               | MySQL database name          |
 | DB_PORT        | 3306                                 | MySQL port                   |
 | PORT           | 3000                                 | Express server port          |
+| FRONTEND_ORIGIN| http://localhost:3000                | Allowed CORS frontend origin |
 | JWT_SECRET     | TruckBoss_Super_Secret_Key_2026_...  | JWT signing secret           |
 | JWT_EXPIRES_IN | 7d                                   | JWT expiry duration          |
 

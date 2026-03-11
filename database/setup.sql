@@ -14,7 +14,7 @@ CREATE TABLE `users` (
     `email` VARCHAR(100) NOT NULL,
     `password` VARCHAR(255) NOT NULL,
     `full_name` VARCHAR(50) DEFAULT NULL,
-    `role` ENUM('admin','manager','viewer') DEFAULT 'admin',
+    `role` ENUM('admin','manager','driver') DEFAULT 'admin',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`user_id`),
     UNIQUE KEY `email` (`email`)

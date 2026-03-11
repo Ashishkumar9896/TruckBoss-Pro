@@ -1,52 +1,184 @@
-/* ════════════════════════════════════════════════════════════
-   TruckBoss Pro — Frontend Application
-   ════════════════════════════════════════════════════════════ */
+const API = "";
 
-const API = "";   // same origin
+const appState = {
+  socket: null,
+  currentSection: "dashboard",
+  currentUser: null,
+  tripFiltersBound: false,
+  trips: {
+    page: 1,
+    limit: 10,
+    totalTrips: 0,
+    totalPages: 1,
+    rows: [],
+  },
+};
 
-// ── Utility: API request with JWT ─────────────────────────────────────────────
+const sectionTitles = {
+  dashboard: "Dashboard",
+  customers: "Customers",
+  drivers: "Drivers",
+  trucks: "Trucks",
+  trips: "Trips",
+  fuel: "Fuel Records",
+};
+
+const sectionAccess = {
+  admin: ["dashboard", "customers", "drivers", "trucks", "trips", "fuel"],
+  manager: ["dashboard", "customers", "drivers", "trucks", "trips", "fuel"],
+  driver: ["trips"],
+};
+
+function getToken() {
+  return localStorage.getItem("tbToken");
+}
+
+function getCurrentUser() {
+  return appState.currentUser || JSON.parse(localStorage.getItem("tbUser") || "null");
+}
+
+function getCurrentRole() {
+  return getCurrentUser()?.role || "guest";
+}
+
+function isAdmin() {
+  return getCurrentRole() === "admin";
+}
+
+function isManager() {
+  return getCurrentRole() === "manager";
+}
+
+function isDriver() {
+  return getCurrentRole() === "driver";
+}
+
+function canManageCustomers() {
+  return isAdmin() || isManager();
+}
+
+function canManageTrips() {
+  return isAdmin() || isManager();
+}
+
+function canManageFuel() {
+  return isAdmin() || isManager();
+}
+
+function canManageDriversAndTrucks() {
+  return isAdmin();
+}
+
+function canDeleteRecords() {
+  return isAdmin();
+}
+
 async function api(path, options = {}) {
-  const token = localStorage.getItem("tbToken");
-  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  if (token) headers["Authorization"] = "Bearer " + token;
+  const headers = { ...(options.headers || {}) };
+
+  if (!(options.body instanceof FormData) && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const token = getToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const res = await fetch(API + path, { ...options, headers });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Request failed");
+
+  if (!res.ok) {
+    throw new Error(data.error || data.message || "Request failed");
+  }
+
   return data;
 }
 
-// ── Toast ──────────────────────────────────────────────────────────────────────
-function showToast(msg, type = "info") {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.className = "toast show " + type;
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.className = "toast"; }, 3500);
+function showToast(message, type = "info") {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.className = `toast show ${type}`;
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.className = "toast";
+  }, 3500);
 }
 
-// ── Modal helpers ──────────────────────────────────────────────────────────────
-function openModal(id) { document.getElementById(id).style.display = "flex"; }
-function closeModal(id) { document.getElementById(id).style.display = "none"; }
-function switchModal(from, to) { closeModal(from); openModal(to); }
+function openModal(id) {
+  document.getElementById(id).style.display = "flex";
+}
 
-// ── Password visibility toggle ─────────────────────────────────────────────────
+function closeModal(id) {
+  document.getElementById(id).style.display = "none";
+}
+
+function switchModal(from, to) {
+  closeModal(from);
+  openModal(to);
+}
+
 function togglePassword(inputId, icon) {
-  const el = document.getElementById(inputId);
-  if (el.type === "password") {
-    el.type = "text";
+  const element = document.getElementById(inputId);
+  if (element.type === "password") {
+    element.type = "text";
     icon.classList.replace("ri-eye-line", "ri-eye-off-line");
   } else {
-    el.type = "password";
+    element.type = "password";
     icon.classList.replace("ri-eye-off-line", "ri-eye-line");
   }
 }
 
-function scrollToTop() { window.scrollTo(0, 0); }
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
-// ══ AUTH ══════════════════════════════════════════════════════════════════════
+async function downloadReport(path, filename) {
+  try {
+    const res = await fetch(API + path, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
 
-async function handleLogin(e) {
-  e.preventDefault();
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.message || "Download failed");
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+}
+
+function downloadTripsPDF() {
+  return downloadReport("/api/reports/trips/pdf", "trip-report.pdf");
+}
+
+function downloadTripsExcel() {
+  return downloadReport("/api/reports/trips/excel", "trip-report.xlsx");
+}
+
+function downloadFuelExcel() {
+  return downloadReport("/api/reports/fuel/excel", "fuel-report.xlsx");
+}
+
+function downloadRevenueExcel() {
+  return downloadReport("/api/reports/revenue/monthly/excel", "monthly-revenue-report.xlsx");
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+
   try {
     const data = await api("/api/auth/login", {
       method: "POST",
@@ -55,6 +187,7 @@ async function handleLogin(e) {
         password: document.getElementById("loginPassword").value,
       }),
     });
+
     localStorage.setItem("tbToken", data.token);
     localStorage.setItem("tbUser", JSON.stringify(data.user));
     closeModal("authModal");
@@ -64,8 +197,9 @@ async function handleLogin(e) {
   }
 }
 
-async function handleRegister(e) {
-  e.preventDefault();
+async function handleRegister(event) {
+  event.preventDefault();
+
   try {
     const data = await api("/api/auth/register", {
       method: "POST",
@@ -75,6 +209,7 @@ async function handleRegister(e) {
         password: document.getElementById("regPassword").value,
       }),
     });
+
     localStorage.setItem("tbToken", data.token);
     localStorage.setItem("tbUser", JSON.stringify(data.user));
     closeModal("registerModal");
@@ -85,167 +220,256 @@ async function handleRegister(e) {
 }
 
 function handleLogout() {
+  if (appState.socket) {
+    appState.socket.disconnect();
+    appState.socket = null;
+  }
+
   localStorage.removeItem("tbToken");
   localStorage.removeItem("tbUser");
+  appState.currentUser = null;
+
   document.getElementById("dashboardPage").style.display = "none";
-  document.getElementById("landingPage").style.display = "flex";
+  document.getElementById("landingPage").style.display = "block";
   history.pushState({}, "", "/");
 }
 
-function enterDashboard(user) {
-  document.getElementById("landingPage").style.display = "none";
-  document.getElementById("dashboardPage").style.display = "block";
-  const name = user.full_name || user.email.split("@")[0];
-  document.getElementById("userGreeting").textContent = "👋 " + name;
-  navigate("dashboard");
-  history.pushState({ section: "dashboard" }, "", "/dashboard");
+function getDefaultSectionForRole(role) {
+  return role === "driver" ? "trips" : "dashboard";
 }
 
-// Browser back/forward
-window.addEventListener("popstate", (e) => {
-  const section = e.state && e.state.section;
-  if (section) navigate(section, false);
+function enterDashboard(user) {
+  appState.currentUser = user;
+  document.getElementById("landingPage").style.display = "none";
+  document.getElementById("dashboardPage").style.display = "block";
+  document.getElementById("userGreeting").textContent = user.full_name || user.email.split("@")[0];
+  document.getElementById("userRoleLabel").textContent = `${user.role} access`;
+
+  applyRolePermissions(user);
+  bindTripFilterEvents();
+  initRealtime();
+
+  const defaultSection = getDefaultSectionForRole(user.role);
+  navigate(defaultSection);
+  history.replaceState({ section: defaultSection }, "", `/${defaultSection}`);
+}
+
+function applyRolePermissions(user) {
+  const allowedSections = sectionAccess[user.role] || [];
+
+  document.querySelectorAll(".nav-item").forEach((button) => {
+    button.style.display = allowedSections.includes(button.dataset.section) ? "flex" : "none";
+  });
+
+  toggleElements(".admin-only", isAdmin());
+  toggleElements(".manage-customers", canManageCustomers());
+  toggleElements(".manage-trips", canManageTrips());
+  toggleElements(".manage-fuel", canManageFuel());
+  toggleElements(".admin-panel", isAdmin() || isManager());
+
+  const driverFilter = document.getElementById("tripDriverFilter");
+  if (isDriver()) {
+    driverFilter.value = user.full_name || user.email.split("@")[0];
+    driverFilter.disabled = true;
+  } else {
+    driverFilter.disabled = false;
+  }
+}
+
+function toggleElements(selector, shouldShow) {
+  document.querySelectorAll(selector).forEach((element) => {
+    element.style.display = shouldShow ? "inline-flex" : "none";
+  });
+}
+
+function initRealtime() {
+  const token = getToken();
+  if (!token || typeof io === "undefined") return;
+  if (appState.socket && appState.socket.connected) return;
+
+  const socketStatus = document.getElementById("socketStatus");
+  appState.socket = io({ auth: { token } });
+
+  appState.socket.on("connect", () => {
+    socketStatus.textContent = "Live";
+  });
+
+  appState.socket.on("disconnect", () => {
+    socketStatus.textContent = "Offline";
+  });
+
+  appState.socket.on("new_trip", () => {
+    if (appState.currentSection === "trips") {
+      loadTrips(appState.trips.page);
+    }
+    if (!isDriver()) {
+      loadDashboard();
+    }
+    showToast("New trip recorded", "success");
+  });
+
+  appState.socket.on("fuel_update", () => {
+    if (appState.currentSection === "fuel") {
+      loadFuel();
+    }
+    if (!isDriver()) {
+      loadDashboard();
+    }
+    showToast("Fuel log updated", "info");
+  });
+
+  appState.socket.on("truck_location_update", () => {
+    if (appState.currentSection === "trucks") {
+      loadTrucks();
+    }
+  });
+}
+
+window.addEventListener("popstate", (event) => {
+  const section = event.state?.section;
+  if (section) {
+    navigate(section, false);
+  }
 });
 
-// ══ NAVIGATION ════════════════════════════════════════════════════════════════
-
-const sectionTitles = {
-  dashboard: "Dashboard",
-  customers: "Customers",
-  drivers:   "Drivers",
-  trucks:    "Trucks",
-  trips:     "Trips",
-  fuel:      "Fuel Records",
-};
-
 function navigate(section, pushState = true) {
-  // Hide all sections
-  document.querySelectorAll(".section-content").forEach((el) => {
-    el.style.display = "none";
-  });
-  // Show target
-  const target = document.getElementById("section" + capitalize(section));
-  if (target) target.style.display = "block";
+  const allowedSections = sectionAccess[getCurrentRole()] || [];
+  const safeSection = allowedSections.includes(section) ? section : getDefaultSectionForRole(getCurrentRole());
 
-  // Update sidebar
-  document.querySelectorAll(".nav-item").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.section === section);
+  appState.currentSection = safeSection;
+
+  document.querySelectorAll(".section-content").forEach((sectionElement) => {
+    sectionElement.style.display = "none";
   });
 
-  // Update title
-  document.getElementById("pageTitle").textContent = sectionTitles[section] || section;
+  const target = document.getElementById(`section${capitalize(safeSection)}`);
+  if (target) {
+    target.style.display = "block";
+  }
 
-  // Load data
+  document.querySelectorAll(".nav-item").forEach((button) => {
+    button.classList.toggle("active", button.dataset.section === safeSection);
+  });
+
+  document.getElementById("pageTitle").textContent = sectionTitles[safeSection] || capitalize(safeSection);
+
   const loaders = {
     dashboard: loadDashboard,
     customers: loadCustomers,
-    drivers:   loadDrivers,
-    trucks:    loadTrucks,
-    trips:     loadTrips,
-    fuel:      loadFuel,
+    drivers: loadDrivers,
+    trucks: loadTrucks,
+    trips: () => loadTrips(appState.trips.page),
+    fuel: loadFuel,
   };
-  if (loaders[section]) loaders[section]();
 
-  if (pushState) history.pushState({ section }, "", "/" + section);
-}
-
-function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-// Auto-login from stored token (after navigation helpers are initialized)
-(function autoLogin() {
-  const token = localStorage.getItem("tbToken");
-  const user = JSON.parse(localStorage.getItem("tbUser") || "null");
-  if (token && user) {
-    enterDashboard(user);
+  if (loaders[safeSection]) {
+    loaders[safeSection]();
   }
-})();
 
-// ── Form toggle helpers ────────────────────────────────────────────────────────
-function toggleForm(formId) {
-  const el = document.getElementById(formId);
-  el.style.display = el.style.display === "none" ? "block" : "none";
+  if (pushState) {
+    history.pushState({ section: safeSection }, "", `/${safeSection}`);
+  }
 }
+
+function capitalize(value) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function toggleForm(formId) {
+  const element = document.getElementById(formId);
+  element.style.display = element.style.display === "none" ? "block" : "none";
+}
+
 function cancelForm(formId, resetFn) {
   document.getElementById(formId).style.display = "none";
-  if (resetFn) resetFn();
-}
-
-// ══ CHARTS ════════════════════════════════════════════════════════════════════
-let revenueChart = null;
-let truckChart   = null;
-
-function destroyChart(chartVar) { if (chartVar) { chartVar.destroy(); } }
-
-async function loadDashboard() {
-  try {
-    const [stats, revData] = await Promise.all([
-      api("/api/dashboard/stats"),
-      api("/api/dashboard/revenue-chart"),
-    ]);
-    renderStatCards(stats);
-    renderRevenueChart(revData);
-  } catch (err) {
-    showToast("Failed to load dashboard: " + err.message, "error");
+  if (resetFn) {
+    resetFn();
   }
 }
 
-function renderStatCards(s) {
-  const fmt = (n) => Number(n).toLocaleString("en-IN");
-  const money = (n) => `₹${fmt(Number(n) || 0)}`;
-  const rate = Number(s.collectionRate || 0).toFixed(2);
+function bindTripFilterEvents() {
+  if (appState.tripFiltersBound) return;
+
+  ["tripDriverFilter", "tripTruckFilter", "tripDateFilter", "tripStatusFilter"].forEach((id) => {
+    const element = document.getElementById(id);
+    const eventName = element.tagName === "SELECT" || element.type === "date" ? "change" : "input";
+    element.addEventListener(eventName, debounce(() => loadTrips(1), 300));
+  });
+
+  appState.tripFiltersBound = true;
+}
+
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+let revenueChart = null;
+let truckChart = null;
+let fuelTrendChart = null;
+
+function destroyChart(chart) {
+  if (chart) {
+    chart.destroy();
+  }
+}
+
+async function loadDashboard() {
+  if (isDriver()) return;
+
+  try {
+    const [metrics, analytics] = await Promise.all([
+      api("/api/dashboard/metrics"),
+      api("/api/dashboard/analytics"),
+    ]);
+    renderStatCards(metrics);
+    renderRevenueChart(analytics.monthlyRevenue || []);
+    renderFuelTrendChart(analytics.monthlyFuelCost || []);
+  } catch (err) {
+    showToast(`Failed to load dashboard: ${err.message}`, "error");
+  }
+}
+
+function renderStatCards(metrics) {
   document.getElementById("dashboardCards").innerHTML = `
-    <div class="stat-card">
-      <div class="stat-icon orange"><i class="ri-group-line"></i></div>
-      <div class="stat-label">Customers</div>
-      <div class="stat-value">${s.customers}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon green"><i class="ri-money-rupee-circle-line"></i></div>
-      <div class="stat-label">Collected Revenue</div>
-      <div class="stat-value">${money(s.revenue)}</div>
-      <div class="stat-note">Collection Rate: ${rate}%</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon yellow"><i class="ri-wallet-3-line"></i></div>
-      <div class="stat-label">Outstanding Balance</div>
-      <div class="stat-value">${money(s.balanceAmount)}</div>
-      <div class="stat-note">Pending customer dues</div>
-    </div>
-    <div class="stat-card">
+    <article class="stat-card highlight-card">
       <div class="stat-icon blue"><i class="ri-truck-line"></i></div>
-      <div class="stat-label">Total Trucks</div>
-      <div class="stat-value">${s.trucks}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon green"><i class="ri-checkbox-circle-line"></i></div>
-      <div class="stat-label">Available</div>
-      <div class="stat-value">${s.trucksAvailable}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon blue"><i class="ri-road-map-line"></i></div>
-      <div class="stat-label">In Use</div>
-      <div class="stat-value">${s.trucksInUse}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon yellow"><i class="ri-tools-line"></i></div>
-      <div class="stat-label">Maintenance</div>
-      <div class="stat-value">${s.trucksMaintenance}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon purple"><i class="ri-steering-2-line"></i></div>
-      <div class="stat-label">Drivers</div>
-      <div class="stat-value">${s.drivers}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon orange"><i class="ri-map-pin-2-line"></i></div>
-      <div class="stat-label">Trips Logged</div>
-      <div class="stat-value">${s.trips}</div>
-    </div>
-    <div class="stat-card">
+      <div class="stat-copy">
+        <span class="stat-label">Total Trucks</span>
+        <strong class="stat-value">${Number(metrics.totalTrucks || 0).toLocaleString("en-IN")}</strong>
+      </div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-icon teal"><i class="ri-route-line"></i></div>
+      <div class="stat-copy">
+        <span class="stat-label">Active Trucks</span>
+        <strong class="stat-value">${Number(metrics.activeTrucks || 0).toLocaleString("en-IN")}</strong>
+      </div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-icon gold"><i class="ri-money-rupee-circle-line"></i></div>
+      <div class="stat-copy">
+        <span class="stat-label">Monthly Revenue</span>
+        <strong class="stat-value">${formatCurrency(metrics.monthlyRevenue)}</strong>
+      </div>
+    </article>
+    <article class="stat-card">
       <div class="stat-icon red"><i class="ri-fuel-line"></i></div>
-      <div class="stat-label">Fuel Expense</div>
-      <div class="stat-value">${money(s.fuelCost)}</div>
-    </div>
+      <div class="stat-copy">
+        <span class="stat-label">Fuel Expenses</span>
+        <strong class="stat-value">${formatCurrency(metrics.fuelExpenses)}</strong>
+      </div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-icon green"><i class="ri-line-chart-line"></i></div>
+      <div class="stat-copy">
+        <span class="stat-label">Profit</span>
+        <strong class="stat-value">${formatCurrency(metrics.profit)}</strong>
+      </div>
+    </article>
   `;
 }
 
@@ -255,68 +479,115 @@ function renderRevenueChart(data) {
   revenueChart = new Chart(ctx, {
     type: "bar",
     data: {
-      labels: data.map((d) => d.name),
+      labels: data.map((item) => item.month),
       datasets: [{
-        label: "Amount Paid (₹)",
-        data: data.map((d) => d.amount_paid),
-        backgroundColor: "rgba(249,115,22,.7)",
-        borderColor: "#f97316",
-        borderWidth: 2,
-        borderRadius: 6,
+        label: "Revenue (₹)",
+        data: data.map((item) => item.revenue),
+        backgroundColor: "rgba(249, 115, 22, 0.78)",
+        borderRadius: 14,
+        borderSkipped: false,
       }],
     },
-    options: {
-      responsive: true,
-      plugins: { legend: { labels: { color: "#e5e7eb" } } },
-      scales: {
-        x: { ticks: { color: "#94a3b8" }, grid: { color: "#374151" } },
-        y: { ticks: { color: "#94a3b8" }, grid: { color: "#374151" } },
-      },
-    },
+    options: getChartOptions(),
   });
 }
 
-// ══ CUSTOMERS ════════════════════════════════════════════════════════════════
+function renderFuelTrendChart(data) {
+  destroyChart(fuelTrendChart);
+  const ctx = document.getElementById("fuelTrendChart").getContext("2d");
+  fuelTrendChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: data.map((item) => item.month),
+      datasets: [{
+        label: "Fuel Cost (₹)",
+        data: data.map((item) => item.fuelCost),
+        borderColor: "#22d3ee",
+        backgroundColor: "rgba(34, 211, 238, 0.14)",
+        fill: true,
+        tension: 0.35,
+      }],
+    },
+    options: getChartOptions(),
+  });
+}
+
+function getChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: "#d7dfeb",
+          font: { family: "Manrope" },
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: { color: "#90a0b8" },
+        grid: { color: "rgba(128, 145, 171, 0.12)" },
+      },
+      y: {
+        ticks: { color: "#90a0b8" },
+        grid: { color: "rgba(128, 145, 171, 0.12)" },
+      },
+    },
+  };
+}
 
 async function loadCustomers() {
   try {
     const rows = await api("/api/customers");
     const tbody = document.querySelector("#customerTable tbody");
-    if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">No customers yet</td></tr>';
+
+    if (!rows.length) {
+      tbody.innerHTML = emptyTableRow(7, "No customers yet");
       return;
     }
-    tbody.innerHTML = rows.map((c, i) => `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${esc(c.name)}</td>
-        <td>${esc(c.phone_no || "—")}</td>
-        <td>${esc(c.address || "—")}</td>
-        <td>₹${Number(c.amount_paid).toLocaleString("en-IN")}</td>
-        <td>₹${Number(c.balance).toLocaleString("en-IN")}</td>
-        <td>
-          <button class="btn btn-sm btn-outline" onclick="editCustomer(${c.customer_id})"><i class="ri-edit-line"></i></button>
-          <button class="btn btn-sm btn-danger" onclick="deleteCustomer(${c.customer_id})"><i class="ri-delete-bin-line"></i></button>
-        </td>
-      </tr>`).join("");
+
+    tbody.innerHTML = rows.map((customer, index) => {
+      const actions = canManageCustomers()
+        ? `
+          <div class="table-actions">
+            <button class="icon-btn" onclick="editCustomer(${customer.customer_id})"><i class="ri-edit-line"></i></button>
+            ${canDeleteRecords() ? `<button class="icon-btn danger" onclick="deleteCustomer(${customer.customer_id})"><i class="ri-delete-bin-line"></i></button>` : ""}
+          </div>
+        `
+        : '<span class="muted-label">Read only</span>';
+
+      return `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${esc(customer.name)}</td>
+          <td>${esc(customer.phone_no || "—")}</td>
+          <td>${esc(customer.address || "—")}</td>
+          <td>${formatCurrency(customer.amount_paid)}</td>
+          <td>${formatCurrency(customer.balance)}</td>
+          <td>${actions}</td>
+        </tr>
+      `;
+    }).join("");
   } catch (err) {
-    showToast("Failed to load customers: " + err.message, "error");
+    showToast(`Failed to load customers: ${err.message}`, "error");
   }
 }
 
-async function submitCustomer(e) {
-  e.preventDefault();
+async function submitCustomer(event) {
+  event.preventDefault();
   const id = document.getElementById("custId").value;
   const body = {
-    name:        document.getElementById("custName").value,
-    phone_no:    document.getElementById("custPhone").value,
-    address:     document.getElementById("custAddress").value,
+    name: document.getElementById("custName").value,
+    phone_no: document.getElementById("custPhone").value,
+    address: document.getElementById("custAddress").value,
     amount_paid: document.getElementById("custAmountPaid").value,
-    balance:     document.getElementById("custBalance").value,
+    balance: document.getElementById("custBalance").value,
   };
+
   try {
     if (id) {
-      await api("/api/customers/" + id, { method: "PUT", body: JSON.stringify(body) });
+      await api(`/api/customers/${id}`, { method: "PUT", body: JSON.stringify(body) });
       showToast("Customer updated", "success");
     } else {
       await api("/api/customers", { method: "POST", body: JSON.stringify(body) });
@@ -331,13 +602,13 @@ async function submitCustomer(e) {
 
 async function editCustomer(id) {
   try {
-    const c = await api("/api/customers/" + id);
-    document.getElementById("custId").value = c.customer_id;
-    document.getElementById("custName").value = c.name;
-    document.getElementById("custPhone").value = c.phone_no || "";
-    document.getElementById("custAddress").value = c.address || "";
-    document.getElementById("custAmountPaid").value = c.amount_paid;
-    document.getElementById("custBalance").value = c.balance;
+    const customer = await api(`/api/customers/${id}`);
+    document.getElementById("custId").value = customer.customer_id;
+    document.getElementById("custName").value = customer.name;
+    document.getElementById("custPhone").value = customer.phone_no || "";
+    document.getElementById("custAddress").value = customer.address || "";
+    document.getElementById("custAmountPaid").value = customer.amount_paid;
+    document.getElementById("custBalance").value = customer.balance;
     document.getElementById("customerForm").style.display = "block";
     document.getElementById("customerForm").scrollIntoView({ behavior: "smooth" });
   } catch (err) {
@@ -346,9 +617,10 @@ async function editCustomer(id) {
 }
 
 async function deleteCustomer(id) {
+  if (!canDeleteRecords()) return;
   if (!confirm("Delete this customer?")) return;
   try {
-    await api("/api/customers/" + id, { method: "DELETE" });
+    await api(`/api/customers/${id}`, { method: "DELETE" });
     showToast("Customer deleted", "success");
     loadCustomers();
   } catch (err) {
@@ -357,55 +629,65 @@ async function deleteCustomer(id) {
 }
 
 function resetCustomerForm() {
-  ["custId","custName","custPhone","custAddress"].forEach((id) => {
+  ["custId", "custName", "custPhone", "custAddress"].forEach((id) => {
     document.getElementById(id).value = "";
   });
   document.getElementById("custAmountPaid").value = 0;
   document.getElementById("custBalance").value = 0;
 }
 
-// ══ DRIVERS ══════════════════════════════════════════════════════════════════
-
 async function loadDrivers() {
   try {
     const rows = await api("/api/drivers");
     const tbody = document.querySelector("#driverTable tbody");
-    if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">No drivers yet</td></tr>';
+
+    if (!rows.length) {
+      tbody.innerHTML = emptyTableRow(7, "No drivers yet");
       return;
     }
-    tbody.innerHTML = rows.map((d, i) => `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${esc(d.name)}</td>
-        <td>${esc(d.licence_no)}</td>
-        <td>${esc(d.phone_no || "—")}</td>
-        <td>₹${Number(d.salary).toLocaleString("en-IN")}</td>
-        <td><span class="badge badge-${d.status}">${d.status}</span></td>
-        <td>
-          <button class="btn btn-sm btn-outline" onclick="editDriver(${d.driver_id})"><i class="ri-edit-line"></i></button>
-          <button class="btn btn-sm btn-danger" onclick="deleteDriver(${d.driver_id})"><i class="ri-delete-bin-line"></i></button>
-        </td>
-      </tr>`).join("");
+
+    tbody.innerHTML = rows.map((driver, index) => {
+      const actions = canManageDriversAndTrucks()
+        ? `
+          <div class="table-actions">
+            <button class="icon-btn" onclick="editDriver(${driver.driver_id})"><i class="ri-edit-line"></i></button>
+            <button class="icon-btn danger" onclick="deleteDriver(${driver.driver_id})"><i class="ri-delete-bin-line"></i></button>
+          </div>
+        `
+        : '<span class="muted-label">Read only</span>';
+
+      return `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${esc(driver.name)}</td>
+          <td>${esc(driver.licence_no)}</td>
+          <td>${esc(driver.phone_no || "—")}</td>
+          <td>${formatCurrency(driver.salary)}</td>
+          <td><span class="badge badge-${slugify(driver.status || "active")}">${esc(driver.status || "active")}</span></td>
+          <td>${actions}</td>
+        </tr>
+      `;
+    }).join("");
   } catch (err) {
-    showToast("Failed to load drivers: " + err.message, "error");
+    showToast(`Failed to load drivers: ${err.message}`, "error");
   }
 }
 
-async function submitDriver(e) {
-  e.preventDefault();
+async function submitDriver(event) {
+  event.preventDefault();
   const id = document.getElementById("drvId").value;
   const body = {
-    name:       document.getElementById("drvName").value,
+    name: document.getElementById("drvName").value,
     licence_no: document.getElementById("drvLicence").value,
-    phone_no:   document.getElementById("drvPhone").value,
-    address:    document.getElementById("drvAddress").value,
-    salary:     document.getElementById("drvSalary").value,
-    status:     "active",
+    phone_no: document.getElementById("drvPhone").value,
+    address: document.getElementById("drvAddress").value,
+    salary: document.getElementById("drvSalary").value,
+    status: "active",
   };
+
   try {
     if (id) {
-      await api("/api/drivers/" + id, { method: "PUT", body: JSON.stringify(body) });
+      await api(`/api/drivers/${id}`, { method: "PUT", body: JSON.stringify(body) });
       showToast("Driver updated", "success");
     } else {
       await api("/api/drivers", { method: "POST", body: JSON.stringify(body) });
@@ -420,13 +702,13 @@ async function submitDriver(e) {
 
 async function editDriver(id) {
   try {
-    const d = await api("/api/drivers/" + id);
-    document.getElementById("drvId").value = d.driver_id;
-    document.getElementById("drvName").value = d.name;
-    document.getElementById("drvLicence").value = d.licence_no;
-    document.getElementById("drvPhone").value = d.phone_no || "";
-    document.getElementById("drvAddress").value = d.address || "";
-    document.getElementById("drvSalary").value = d.salary;
+    const driver = await api(`/api/drivers/${id}`);
+    document.getElementById("drvId").value = driver.driver_id;
+    document.getElementById("drvName").value = driver.name;
+    document.getElementById("drvLicence").value = driver.licence_no;
+    document.getElementById("drvPhone").value = driver.phone_no || "";
+    document.getElementById("drvAddress").value = driver.address || "";
+    document.getElementById("drvSalary").value = driver.salary;
     document.getElementById("driverForm").style.display = "block";
     document.getElementById("driverForm").scrollIntoView({ behavior: "smooth" });
   } catch (err) {
@@ -435,9 +717,10 @@ async function editDriver(id) {
 }
 
 async function deleteDriver(id) {
+  if (!canDeleteRecords()) return;
   if (!confirm("Delete this driver?")) return;
   try {
-    await api("/api/drivers/" + id, { method: "DELETE" });
+    await api(`/api/drivers/${id}`, { method: "DELETE" });
     showToast("Driver deleted", "success");
     loadDrivers();
   } catch (err) {
@@ -446,13 +729,11 @@ async function deleteDriver(id) {
 }
 
 function resetDriverForm() {
-  ["drvId","drvName","drvLicence","drvPhone","drvAddress"].forEach((id) => {
+  ["drvId", "drvName", "drvLicence", "drvPhone", "drvAddress"].forEach((id) => {
     document.getElementById(id).value = "";
   });
   document.getElementById("drvSalary").value = 0;
 }
-
-// ══ TRUCKS ═══════════════════════════════════════════════════════════════════
 
 async function loadTrucks() {
   try {
@@ -460,83 +741,96 @@ async function loadTrucks() {
       api("/api/trucks"),
       api("/api/trucks/summary/status"),
     ]);
+
     const tbody = document.querySelector("#truckTable tbody");
-    if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No trucks yet</td></tr>';
+    if (!rows.length) {
+      tbody.innerHTML = emptyTableRow(6, "No trucks yet");
     } else {
-      tbody.innerHTML = rows.map((t, i) => `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${esc(t.truck_no)}</td>
-          <td>${esc(t.driver_name || "—")}</td>
-          <td><span class="badge badge-${t.status.toLowerCase().replace(" ", "-")}">${t.status}</span></td>
-          <td>${esc(t.maintenance)}</td>
-          <td>
-            <button class="btn btn-sm btn-outline" onclick="editTruck(${t.truck_id})"><i class="ri-edit-line"></i></button>
-            <button class="btn btn-sm btn-danger" onclick="deleteTruck(${t.truck_id})"><i class="ri-delete-bin-line"></i></button>
-          </td>
-        </tr>`).join("");
+      tbody.innerHTML = rows.map((truck, index) => {
+        const actions = canManageDriversAndTrucks()
+          ? `
+            <div class="table-actions">
+              <button class="icon-btn" onclick="editTruck(${truck.truck_id})"><i class="ri-edit-line"></i></button>
+              <button class="icon-btn danger" onclick="deleteTruck(${truck.truck_id})"><i class="ri-delete-bin-line"></i></button>
+            </div>
+          `
+          : '<span class="muted-label">Read only</span>';
+
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${esc(truck.truck_no)}</td>
+            <td>${esc(truck.driver_name || "—")}</td>
+            <td><span class="badge badge-${slugify(truck.status)}">${esc(truck.status)}</span></td>
+            <td>${esc(truck.maintenance)}</td>
+            <td>${actions}</td>
+          </tr>
+        `;
+      }).join("");
     }
+
     renderTruckChart(statusData);
-    await populateTruckDriverSelect();
+    if (canManageDriversAndTrucks()) {
+      await populateTruckDriverSelect();
+    }
   } catch (err) {
-    showToast("Failed to load trucks: " + err.message, "error");
+    showToast(`Failed to load trucks: ${err.message}`, "error");
   }
 }
 
 async function populateTruckDriverSelect() {
   try {
     const drivers = await api("/api/drivers");
-    ["trkDriver"].forEach((selId) => {
-      const sel = document.getElementById(selId);
-      const cur = sel.value;
-      sel.innerHTML = '<option value="">-- None --</option>' +
-        drivers.map((d) => `<option value="${d.driver_id}">${esc(d.name)}</option>`).join("");
-      sel.value = cur;
-    });
-  } catch (_) {}
+    const select = document.getElementById("trkDriver");
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">-- None --</option>' + drivers.map((driver) => `<option value="${driver.driver_id}">${esc(driver.name)}</option>`).join("");
+    select.value = currentValue;
+  } catch (err) {
+    showToast(`Failed to load driver list: ${err.message}`, "error");
+  }
 }
 
 function renderTruckChart(data) {
   destroyChart(truckChart);
-  const statusColors = {
-    Available:   "rgba(34,197,94,.7)",
-    "In Use":    "rgba(37,99,235,.7)",
-    Maintenance: "rgba(234,179,8,.7)",
-  };
   const ctx = document.getElementById("truckChart").getContext("2d");
   truckChart = new Chart(ctx, {
     type: "doughnut",
     data: {
-      labels: data.map((d) => d.status),
+      labels: data.map((item) => item.status),
       datasets: [{
-        data: data.map((d) => d.count),
-        backgroundColor: data.map((d) => statusColors[d.status] || "#64748b"),
-        borderColor: "#1f2937",
-        borderWidth: 3,
+        data: data.map((item) => item.count),
+        backgroundColor: ["#1d4ed8", "#f97316", "#22c55e", "#eab308"],
+        borderColor: "rgba(12, 16, 26, 0.95)",
+        borderWidth: 4,
       }],
     },
     options: {
       responsive: true,
       plugins: {
-        legend: { labels: { color: "#e5e7eb" } },
+        legend: {
+          labels: {
+            color: "#d7dfeb",
+            font: { family: "Manrope" },
+          },
+        },
       },
     },
   });
 }
 
-async function submitTruck(e) {
-  e.preventDefault();
+async function submitTruck(event) {
+  event.preventDefault();
   const id = document.getElementById("trkId").value;
   const body = {
-    truck_no:    document.getElementById("trkNo").value,
-    driver_id:   document.getElementById("trkDriver").value || null,
-    status:      document.getElementById("trkStatus").value,
+    truck_no: document.getElementById("trkNo").value,
+    driver_id: document.getElementById("trkDriver").value || null,
+    status: document.getElementById("trkStatus").value,
     maintenance: document.getElementById("trkMaintenance").value,
   };
+
   try {
     if (id) {
-      await api("/api/trucks/" + id, { method: "PUT", body: JSON.stringify(body) });
+      await api(`/api/trucks/${id}`, { method: "PUT", body: JSON.stringify(body) });
       showToast("Truck updated", "success");
     } else {
       await api("/api/trucks", { method: "POST", body: JSON.stringify(body) });
@@ -551,13 +845,13 @@ async function submitTruck(e) {
 
 async function editTruck(id) {
   try {
-    const t = await api("/api/trucks/" + id);
+    const truck = await api(`/api/trucks/${id}`);
     await populateTruckDriverSelect();
-    document.getElementById("trkId").value = t.truck_id;
-    document.getElementById("trkNo").value = t.truck_no;
-    document.getElementById("trkDriver").value = t.driver_id || "";
-    document.getElementById("trkStatus").value = t.status;
-    document.getElementById("trkMaintenance").value = t.maintenance;
+    document.getElementById("trkId").value = truck.truck_id;
+    document.getElementById("trkNo").value = truck.truck_no;
+    document.getElementById("trkDriver").value = truck.driver_id || "";
+    document.getElementById("trkStatus").value = truck.status;
+    document.getElementById("trkMaintenance").value = truck.maintenance;
     document.getElementById("truckForm").style.display = "block";
     document.getElementById("truckForm").scrollIntoView({ behavior: "smooth" });
   } catch (err) {
@@ -566,9 +860,10 @@ async function editTruck(id) {
 }
 
 async function deleteTruck(id) {
+  if (!canDeleteRecords()) return;
   if (!confirm("Delete this truck?")) return;
   try {
-    await api("/api/trucks/" + id, { method: "DELETE" });
+    await api(`/api/trucks/${id}`, { method: "DELETE" });
     showToast("Truck deleted", "success");
     loadTrucks();
   } catch (err) {
@@ -584,180 +879,259 @@ function resetTruckForm() {
   document.getElementById("trkMaintenance").value = "Not Required";
 }
 
-// ══ TRIPS ════════════════════════════════════════════════════════════════════
+function collectTripFilters() {
+  const user = getCurrentUser();
+  return {
+    driver: isDriver() ? (user?.full_name || user?.email?.split("@")[0] || "") : document.getElementById("tripDriverFilter").value.trim(),
+    truck: document.getElementById("tripTruckFilter").value.trim(),
+    date: document.getElementById("tripDateFilter").value,
+    status: document.getElementById("tripStatusFilter").value,
+  };
+}
 
-async function loadTrips() {
+function buildTripQuery(page) {
+  const params = new URLSearchParams();
+  const filters = collectTripFilters();
+
+  params.set("page", String(page));
+  params.set("limit", String(appState.trips.limit));
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  return params.toString();
+}
+
+async function loadTrips(page = 1) {
   try {
-    const [trips, trucks, drivers, customers] = await Promise.all([
-      api("/api/trips"),
-      api("/api/trucks"),
-      api("/api/drivers"),
-      api("/api/customers"),
-    ]);
+    const requests = [api(`/api/trips?${buildTripQuery(page)}`)];
 
-    // Populate selects
-    document.getElementById("trpTruck").innerHTML =
-      '<option value="">-- None --</option>' +
-      trucks.map((t) => `<option value="${t.truck_id}">${esc(t.truck_no)}</option>`).join("");
-    document.getElementById("trpDriver").innerHTML =
-      '<option value="">-- None --</option>' +
-      drivers.map((d) => `<option value="${d.driver_id}">${esc(d.name)}</option>`).join("");
-    document.getElementById("trpCustomer").innerHTML =
-      '<option value="">-- None --</option>' +
-      customers.map((c) => `<option value="${c.customer_id}">${esc(c.name)}</option>`).join("");
-
-    const container = document.getElementById("tripList");
-    if (trips.length === 0) {
-      container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px">No trips yet</p>';
-      return;
+    if (canManageTrips()) {
+      requests.push(api("/api/trucks"), api("/api/drivers"), api("/api/customers"));
     }
 
-    container.innerHTML = trips.map((t) => `
-      <div class="trip-card">
-        <div class="trip-route">
-          <i class="ri-map-pin-2-line"></i>
-          ${esc(t.from_city)} → ${esc(t.to_city)}
-        </div>
-        <div class="trip-meta">
-          <span><i class="ri-truck-line"></i> ${esc(t.truck_no || "—")}</span>
-          <span><i class="ri-steering-2-line"></i> ${esc(t.driver_name || "—")}</span>
-          <span><i class="ri-group-line"></i> ${esc(t.customer_name || "—")}</span>
-          <span><i class="ri-calendar-line"></i> ${t.trip_date ? t.trip_date.split("T")[0] : "—"}</span>
-        </div>
-        <div class="trip-footer">
-          <span class="trip-amount">₹${Number(t.amount).toLocaleString("en-IN")}</span>
-          <span class="badge badge-${t.status}">${t.status}</span>
-          <div class="trip-actions">
-            <button class="btn btn-sm btn-outline" onclick="editTrip(${t.trip_id})"><i class="ri-edit-line"></i></button>
-            <button class="btn btn-sm btn-danger" onclick="deleteTrip(${t.trip_id})"><i class="ri-delete-bin-line"></i></button>
-          </div>
-        </div>
-      </div>`).join("");
+    const [tripResponse, trucks = [], drivers = [], customers = []] = await Promise.all(requests);
+
+    appState.trips.page = Number(tripResponse.page || page);
+    appState.trips.totalTrips = Number(tripResponse.totalTrips || 0);
+    appState.trips.totalPages = Math.max(Math.ceil(appState.trips.totalTrips / appState.trips.limit), 1);
+    appState.trips.rows = Array.isArray(tripResponse.data) ? tripResponse.data : [];
+
+    if (canManageTrips()) {
+      populateTripFormSelects(trucks, drivers, customers);
+    }
+
+    renderTripTable();
+    renderTripPagination();
   } catch (err) {
-    showToast("Failed to load trips: " + err.message, "error");
+    showToast(`Failed to load trips: ${err.message}`, "error");
   }
 }
 
-async function submitTrip(e) {
-  e.preventDefault();
+function populateTripFormSelects(trucks, drivers, customers) {
+  setSelectOptions("trpTruck", trucks.map((truck) => ({ value: truck.truck_id, label: truck.truck_no })));
+  setSelectOptions("trpDriver", drivers.map((driver) => ({ value: driver.driver_id, label: driver.name })));
+  setSelectOptions("trpCustomer", customers.map((customer) => ({ value: customer.customer_id, label: customer.name })));
+}
+
+function setSelectOptions(selectId, options) {
+  const select = document.getElementById(selectId);
+  const currentValue = select.value;
+  select.innerHTML = '<option value="">-- None --</option>' + options.map((option) => `<option value="${option.value}">${esc(option.label)}</option>`).join("");
+  select.value = currentValue;
+}
+
+function renderTripTable() {
+  const tbody = document.querySelector("#tripTable tbody");
+
+  if (!appState.trips.rows.length) {
+    tbody.innerHTML = emptyTableRow(9, isDriver() ? "No assigned trips found" : "No trips found for these filters");
+    return;
+  }
+
+  const rowOffset = (appState.trips.page - 1) * appState.trips.limit;
+
+  tbody.innerHTML = appState.trips.rows.map((trip, index) => {
+    const actions = canManageTrips()
+      ? `
+        <div class="table-actions">
+          <button class="icon-btn" onclick="editTrip(${trip.trip_id})"><i class="ri-edit-line"></i></button>
+          ${canDeleteRecords() ? `<button class="icon-btn danger" onclick="deleteTrip(${trip.trip_id})"><i class="ri-delete-bin-line"></i></button>` : ""}
+        </div>
+      `
+      : '<span class="muted-label">Assigned</span>';
+
+    return `
+      <tr>
+        <td>${rowOffset + index + 1}</td>
+        <td>
+          <div class="route-cell">
+            <strong>${esc(trip.from_city)}</strong>
+            <span><i class="ri-arrow-right-line"></i></span>
+            <strong>${esc(trip.to_city)}</strong>
+          </div>
+        </td>
+        <td>${esc(trip.truck_no || "—")}</td>
+        <td>${esc(trip.driver_name || "—")}</td>
+        <td>${esc(trip.customer_name || "—")}</td>
+        <td>${formatDate(trip.trip_date)}</td>
+        <td><span class="badge badge-${slugify(trip.status)}">${esc(trip.status)}</span></td>
+        <td>${formatCurrency(trip.amount)}</td>
+        <td>${actions}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderTripPagination() {
+  document.getElementById("tripPaginationMeta").textContent = `Page ${appState.trips.page} of ${appState.trips.totalPages} • ${appState.trips.totalTrips} trips`;
+  document.getElementById("tripPrevBtn").disabled = appState.trips.page <= 1;
+  document.getElementById("tripNextBtn").disabled = appState.trips.page >= appState.trips.totalPages;
+}
+
+function changeTripPage(direction) {
+  const nextPage = appState.trips.page + direction;
+  if (nextPage < 1 || nextPage > appState.trips.totalPages) {
+    return;
+  }
+  loadTrips(nextPage);
+}
+
+function resetTripFilters() {
+  document.getElementById("tripTruckFilter").value = "";
+  document.getElementById("tripDateFilter").value = "";
+  document.getElementById("tripStatusFilter").value = "";
+  if (!isDriver()) {
+    document.getElementById("tripDriverFilter").value = "";
+  }
+  loadTrips(1);
+}
+
+async function submitTrip(event) {
+  event.preventDefault();
   const id = document.getElementById("trpId").value;
   const body = {
-    from_city:   document.getElementById("trpFrom").value,
-    to_city:     document.getElementById("trpTo").value,
-    truck_id:    document.getElementById("trpTruck").value || null,
-    driver_id:   document.getElementById("trpDriver").value || null,
+    from_city: document.getElementById("trpFrom").value,
+    to_city: document.getElementById("trpTo").value,
+    truck_id: document.getElementById("trpTruck").value || null,
+    driver_id: document.getElementById("trpDriver").value || null,
     customer_id: document.getElementById("trpCustomer").value || null,
-    amount:      document.getElementById("trpAmount").value,
-    status:      document.getElementById("trpStatus").value,
-    trip_date:   document.getElementById("trpDate").value,
+    amount: document.getElementById("trpAmount").value,
+    status: document.getElementById("trpStatus").value,
+    trip_date: document.getElementById("trpDate").value,
   };
+
   try {
     if (id) {
-      await api("/api/trips/" + id, { method: "PUT", body: JSON.stringify(body) });
+      await api(`/api/trips/${id}`, { method: "PUT", body: JSON.stringify(body) });
       showToast("Trip updated", "success");
     } else {
       await api("/api/trips", { method: "POST", body: JSON.stringify(body) });
       showToast("Trip added", "success");
     }
+
     cancelForm("tripForm", resetTripForm);
-    loadTrips();
+    loadTrips(appState.trips.page);
   } catch (err) {
     showToast(err.message, "error");
   }
 }
 
 async function editTrip(id) {
-  try {
-    const trips = await api("/api/trips");
-    const t = trips.find((x) => x.trip_id === id);
-    if (!t) return;
-    await loadTrips(); // ensure selects populated
-    document.getElementById("trpId").value = t.trip_id;
-    document.getElementById("trpFrom").value = t.from_city;
-    document.getElementById("trpTo").value = t.to_city;
-    document.getElementById("trpTruck").value = t.truck_id || "";
-    document.getElementById("trpDriver").value = t.driver_id || "";
-    document.getElementById("trpCustomer").value = t.customer_id || "";
-    document.getElementById("trpAmount").value = t.amount;
-    document.getElementById("trpStatus").value = t.status;
-    document.getElementById("trpDate").value = t.trip_date ? t.trip_date.split("T")[0] : "";
-    document.getElementById("tripForm").style.display = "block";
-    document.getElementById("tripForm").scrollIntoView({ behavior: "smooth" });
-  } catch (err) {
-    showToast(err.message, "error");
+  if (!canManageTrips()) return;
+
+  const trip = appState.trips.rows.find((row) => row.trip_id === id);
+  if (!trip) {
+    showToast("Trip not available on this page. Use filters to locate it.", "info");
+    return;
   }
+
+  await loadTrips(appState.trips.page);
+  document.getElementById("trpId").value = trip.trip_id;
+  document.getElementById("trpFrom").value = trip.from_city;
+  document.getElementById("trpTo").value = trip.to_city;
+  document.getElementById("trpTruck").value = trip.truck_id || "";
+  document.getElementById("trpDriver").value = trip.driver_id || "";
+  document.getElementById("trpCustomer").value = trip.customer_id || "";
+  document.getElementById("trpAmount").value = trip.amount;
+  document.getElementById("trpStatus").value = trip.status;
+  document.getElementById("trpDate").value = trip.trip_date ? trip.trip_date.split("T")[0] : "";
+  document.getElementById("tripForm").style.display = "block";
+  document.getElementById("tripForm").scrollIntoView({ behavior: "smooth" });
 }
 
 async function deleteTrip(id) {
+  if (!canDeleteRecords()) return;
   if (!confirm("Delete this trip?")) return;
   try {
-    await api("/api/trips/" + id, { method: "DELETE" });
+    await api(`/api/trips/${id}`, { method: "DELETE" });
     showToast("Trip deleted", "success");
-    loadTrips();
+    const nextPage = appState.trips.rows.length === 1 && appState.trips.page > 1 ? appState.trips.page - 1 : appState.trips.page;
+    loadTrips(nextPage);
   } catch (err) {
     showToast(err.message, "error");
   }
 }
 
 function resetTripForm() {
-  ["trpId","trpFrom","trpTo","trpAmount"].forEach((id) => {
+  ["trpId", "trpFrom", "trpTo", "trpAmount", "trpDate"].forEach((id) => {
     document.getElementById(id).value = "";
   });
   document.getElementById("trpTruck").value = "";
   document.getElementById("trpDriver").value = "";
   document.getElementById("trpCustomer").value = "";
   document.getElementById("trpStatus").value = "pending";
-  document.getElementById("trpDate").value = "";
 }
-
-// ══ FUEL ═════════════════════════════════════════════════════════════════════
 
 async function loadFuel() {
   try {
-    const [rows, trucks, drivers] = await Promise.all([
-      api("/api/fuel"),
-      api("/api/trucks"),
-      api("/api/drivers"),
-    ]);
+    const requests = [api("/api/fuel")];
+    if (canManageFuel()) {
+      requests.push(api("/api/trucks"), api("/api/drivers"));
+    }
 
-    document.getElementById("fuelTruck").innerHTML =
-      '<option value="">-- None --</option>' +
-      trucks.map((t) => `<option value="${t.truck_id}">${esc(t.truck_no)}</option>`).join("");
-    document.getElementById("fuelDriver").innerHTML =
-      '<option value="">-- None --</option>' +
-      drivers.map((d) => `<option value="${d.driver_id}">${esc(d.name)}</option>`).join("");
+    const [rows, trucks = [], drivers = []] = await Promise.all(requests);
+
+    if (canManageFuel()) {
+      setSelectOptions("fuelTruck", trucks.map((truck) => ({ value: truck.truck_id, label: truck.truck_no })));
+      setSelectOptions("fuelDriver", drivers.map((driver) => ({ value: driver.driver_id, label: driver.name })));
+    }
 
     const tbody = document.querySelector("#fuelTable tbody");
-    if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">No fuel records yet</td></tr>';
+    if (!rows.length) {
+      tbody.innerHTML = emptyTableRow(7, "No fuel records yet");
       return;
     }
-    tbody.innerHTML = rows.map((f, i) => `
+
+    tbody.innerHTML = rows.map((fuel, index) => `
       <tr>
-        <td>${i + 1}</td>
-        <td>${esc(f.truck_no || "—")}</td>
-        <td>${esc(f.driver_name || "—")}</td>
-        <td>${Number(f.liters).toLocaleString("en-IN")} L</td>
-        <td>₹${Number(f.price).toLocaleString("en-IN")}</td>
-        <td>${f.fuel_date ? f.fuel_date.split("T")[0] : "—"}</td>
-        <td>
-          <button class="btn btn-sm btn-danger" onclick="deleteFuel(${f.fuel_id})"><i class="ri-delete-bin-line"></i></button>
-        </td>
-      </tr>`).join("");
+        <td>${index + 1}</td>
+        <td>${esc(fuel.truck_no || "—")}</td>
+        <td>${esc(fuel.driver_name || "—")}</td>
+        <td>${Number(fuel.liters || 0).toLocaleString("en-IN")} L</td>
+        <td>${formatCurrency(fuel.price)}</td>
+        <td>${formatDate(fuel.fuel_date)}</td>
+        <td>${canDeleteRecords() ? `<div class="table-actions"><button class="icon-btn danger" onclick="deleteFuel(${fuel.fuel_id})"><i class="ri-delete-bin-line"></i></button></div>` : '<span class="muted-label">Read only</span>'}</td>
+      </tr>
+    `).join("");
   } catch (err) {
-    showToast("Failed to load fuel: " + err.message, "error");
+    showToast(`Failed to load fuel: ${err.message}`, "error");
   }
 }
 
-async function submitFuel(e) {
-  e.preventDefault();
+async function submitFuel(event) {
+  event.preventDefault();
   const body = {
-    truck_id:  document.getElementById("fuelTruck").value || null,
+    truck_id: document.getElementById("fuelTruck").value || null,
     driver_id: document.getElementById("fuelDriver").value || null,
-    liters:    document.getElementById("fuelLiters").value,
-    price:     document.getElementById("fuelPrice").value,
+    liters: document.getElementById("fuelLiters").value,
+    price: document.getElementById("fuelPrice").value,
     fuel_date: document.getElementById("fuelDate").value,
   };
+
   try {
     await api("/api/fuel", { method: "POST", body: JSON.stringify(body) });
     showToast("Fuel record added", "success");
@@ -769,9 +1143,10 @@ async function submitFuel(e) {
 }
 
 async function deleteFuel(id) {
+  if (!canDeleteRecords()) return;
   if (!confirm("Delete this fuel record?")) return;
   try {
-    await api("/api/fuel/" + id, { method: "DELETE" });
+    await api(`/api/fuel/${id}`, { method: "DELETE" });
     showToast("Fuel record deleted", "success");
     loadFuel();
   } catch (err) {
@@ -787,12 +1162,36 @@ function resetFuelForm() {
   document.getElementById("fuelDate").value = "";
 }
 
-// ── Escape HTML to prevent XSS ────────────────────────────────────────────────
-function esc(str) {
-  return String(str)
+function emptyTableRow(colspan, label) {
+  return `<tr><td colspan="${colspan}" class="empty-state-cell">${esc(label)}</td></tr>`;
+}
+
+function formatCurrency(value) {
+  return `₹${Number(value || 0).toLocaleString("en-IN")}`;
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  return String(value).split("T")[0];
+}
+
+function slugify(value) {
+  return String(value || "unknown").toLowerCase().replace(/\s+/g, "-");
+}
+
+function esc(value) {
+  return String(value)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+(function autoLogin() {
+  const token = getToken();
+  const user = JSON.parse(localStorage.getItem("tbUser") || "null");
+  if (token && user) {
+    enterDashboard(user);
+  }
+})();
