@@ -184,6 +184,10 @@
           <h2 id="pageTitle">Dashboard</h2>
         </div>
         <div class="topbar-right">
+          <button class="btn btn-ghost" onclick="showToast('No new alerts', 'info')" aria-label="Notifications">
+            <i class="ri-notification-3-line"></i>
+            Alerts
+          </button>
           <div class="profile-pill">
             <div class="profile-meta">
               <span id="userGreeting" class="user-greeting"></span>
@@ -207,6 +211,7 @@
             <button class="btn btn-ghost" onclick="downloadTripsPDF()">Trips PDF</button>
             <button class="btn btn-ghost" onclick="downloadTripsExcel()">Trips Excel</button>
             <button class="btn btn-ghost" onclick="downloadFuelExcel()">Fuel Excel</button>
+            <button class="btn btn-ghost" onclick="downloadRevenuePDF()">Revenue PDF</button>
             <button class="btn btn-primary" onclick="downloadRevenueExcel()">Revenue Excel</button>
           </div>
         </div>

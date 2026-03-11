@@ -25,4 +25,11 @@ router.get(
   asyncHandler(exportMonthlyRevenuePdf)
 );
 
+// Alias for clients expecting the simplified revenue PDF path.
+router.get(
+  "/reports/revenue/pdf",
+  authorizeRoles("admin", "manager"),
+  asyncHandler(exportMonthlyRevenuePdf)
+);
+
 module.exports = router;

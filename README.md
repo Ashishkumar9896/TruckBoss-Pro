@@ -14,6 +14,52 @@
 - 🌙 Dark-themed responsive UI (mobile-friendly)
 - 🔌 RESTful JSON API with MySQL backend
 
+## Access Control (Role-Based)
+
+The app uses a `users.role` value and role middleware to protect APIs.
+
+- Roles: `admin`, `manager`, `driver`
+- Middleware: `authorizeRoles(...roles)` validates `req.user.role`
+- Token middleware: `authenticateToken` decodes JWT and attaches `req.user`
+
+Example middleware pattern:
+
+```js
+function authorizeRoles(...roles) {
+	return (req, res, next) => {
+		if (!roles.includes(req.user.role)) {
+			return res.status(403).json({ message: "Access denied" });
+		}
+		next();
+	};
+}
+```
+
+## Real-Time Dashboard
+
+Socket.IO powers live updates without page refresh.
+
+- `new_trip`
+- `fuel_update`
+- `truck_location_update`
+
+Dashboard and operational sections update in real-time based on active view.
+
+## Export Reports
+
+Exports are available via PDF and Excel endpoints.
+
+- `GET /api/reports/trips/pdf`
+- `GET /api/reports/trips/excel`
+- `GET /api/reports/fuel/excel`
+- `GET /api/reports/revenue/pdf`
+- `GET /api/reports/revenue/monthly/excel`
+
+Libraries used:
+
+- `pdfkit`
+- `exceljs`
+
 ## Tech Stack
 
 | Layer     | Technology                              |
@@ -128,6 +174,34 @@ npm run dev
 | GET    | /api/fuel      | List all fuel records    |
 | POST   | /api/fuel      | Add fuel record          |
 | DELETE | /api/fuel/:id  | Delete fuel record       |
+
+### Reports *(requires Bearer token, admin/manager)*
+| Method | Endpoint                            | Description                      |
+|--------|-------------------------------------|----------------------------------|
+| GET    | /api/reports/trips/pdf              | Export trips PDF                 |
+| GET    | /api/reports/trips/excel            | Export trips Excel               |
+| GET    | /api/reports/fuel/excel             | Export fuel Excel                |
+| GET    | /api/reports/revenue/pdf            | Export monthly revenue PDF       |
+| GET    | /api/reports/revenue/monthly/excel  | Export monthly revenue Excel     |
+
+## UI Highlights
+
+- Sidebar dashboard navigation
+- Topbar profile context
+- Metric cards and charts
+- Rich data tables
+- Export action buttons
+- Trip search filters and pagination
+
+## Screenshots
+
+Add screenshots to the `screenshots/` folder and link them here.
+
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Trips
+![Trips](screenshots/trips.png)
 
 ## Project Structure
 
