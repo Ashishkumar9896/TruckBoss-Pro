@@ -21,7 +21,7 @@ function showToast(msg, type = 'info') {
 }
 
 /* ── Loading / Error / Empty helpers ── */
-function showLoading(c) { if (!c) return; c.style.position = 'relative'; const d = document.createElement('div'); d.className = 'loading'; d.innerText = 'Loading...'; c.appendChild(d); }
+function showLoading(c, msg = 'Loading...') { if (!c) return; c.style.position = 'relative'; const d = document.createElement('div'); d.className = 'loading'; d.innerText = msg; c.appendChild(d); }
 function hideLoading(c) { if (!c) return; c.querySelectorAll('.loading').forEach(e => e.remove()); }
 function showError(c, m) { const el = typeof c === 'string' ? document.getElementById(c) : c; if (el) el.innerHTML = `<div class='error'>⚠ ${m}</div>`; }
 function emptyRow(cols, msg) { return `<tr><td colspan="${cols}" class="empty">${msg}</td></tr>`; }
@@ -139,7 +139,7 @@ let revenueChart = null, fuelTrendChart = null;
 async function loadDashboard() {
   switchView('dashboard');
   const c = document.getElementById('view-dashboard');
-  showLoading(c);
+  showLoading(c, 'Loading dashboard metrics...');
   try {
     const [m, a] = await Promise.all([api('/api/dashboard/metrics'), api('/api/dashboard/analytics')]);
     document.getElementById('totalTrucks').textContent = m.totalTrucks || 0;
@@ -175,7 +175,7 @@ async function loadTrucks() {
   switchView('trucks');
   const tbody = document.getElementById('trucksTableBody');
   const tc = tbody.closest('.table-responsive');
-  showLoading(tc);
+  showLoading(tc, 'Loading trucks...');
   try {
     const trucks = await api('/api/trucks');
     await populateTruckDriverSelect();
@@ -240,7 +240,7 @@ async function loadDrivers() {
   switchView('drivers');
   const tbody = document.getElementById('driversTableBody');
   const tc = tbody.closest('.table-responsive');
-  showLoading(tc);
+  showLoading(tc, 'Loading drivers...');
   try {
     const drivers = await api('/api/drivers');
     if (!drivers.length) { tbody.innerHTML = emptyRow(7, 'No drivers yet'); return; }
@@ -297,7 +297,7 @@ async function loadCustomers() {
   switchView('customers');
   const tbody = document.getElementById('customersTableBody');
   const tc = tbody.closest('.table-responsive');
-  showLoading(tc);
+  showLoading(tc, 'Loading customers...');
   try {
     const rows = await api('/api/customers');
     if (!rows.length) { tbody.innerHTML = emptyRow(7, 'No customers yet'); return; }
@@ -370,7 +370,7 @@ async function loadTrips() {
 async function fetchTrips() {
   const tbody = document.getElementById('tripsTableBody');
   const tc = tbody.closest('.table-responsive');
-  showLoading(tc);
+  showLoading(tc, 'Loading trips...');
   const params = new URLSearchParams();
   params.set('page', appState.trips.page);
   params.set('limit', appState.trips.limit);
@@ -452,7 +452,7 @@ async function loadFuel() {
   switchView('fuel');
   const tbody = document.getElementById('fuelTableBody');
   const tc = tbody.closest('.table-responsive');
-  showLoading(tc);
+  showLoading(tc, 'Loading fuel records...');
   try {
     const [rows, trucks, drivers] = await Promise.all([api('/api/fuel'), api('/api/trucks'), api('/api/drivers')]);
     setSelectOpts('fuelTruck', trucks.map(t => ({ value: t.truck_id, label: t.truck_no })));
@@ -503,6 +503,7 @@ function initRealtime() {
     appState.socket = io({ auth: { token } });
     appState.socket.on('new_trip', () => { showToast('New trip recorded', 'success'); if (document.getElementById('view-trips').style.display === 'block') fetchTrips(); });
     appState.socket.on('fuel_update', () => { showToast('Fuel updated', 'info'); if (document.getElementById('view-fuel').style.display === 'block') loadFuel(); if (document.getElementById('view-dashboard').style.display === 'block') loadDashboard(); });
+    appState.socket.on('truck_location_update', () => { showToast('Truck location updated', 'info'); if (document.getElementById('view-trucks').style.display === 'block') loadTrucks(); if (document.getElementById('view-trips').style.display === 'block') fetchTrips(); });
   }
 }
 
