@@ -77,8 +77,14 @@
       <li class="menu-item" id="menu-trucks" onclick="loadTrucks()">
         <i class="fa-solid fa-truck"></i><span>Trucks</span>
       </li>
+      <li class="menu-item" id="menu-maintenance" onclick="loadMaintenance()">
+        <i class="fa-solid fa-wrench"></i><span>Maintenance</span>
+      </li>
       <li class="menu-item" id="menu-drivers" onclick="loadDrivers()">
         <i class="fa-solid fa-id-card"></i><span>Drivers</span>
+      </li>
+      <li class="menu-item" id="menu-performance" onclick="loadPerformance()">
+        <i class="fa-solid fa-trophy"></i><span>Performance</span>
       </li>
       <li class="menu-item" id="menu-customers" onclick="loadCustomers()">
         <i class="fa-solid fa-users"></i><span>Customers</span>
@@ -88,6 +94,9 @@
       </li>
       <li class="menu-item" id="menu-fuel" onclick="loadFuel()">
         <i class="fa-solid fa-gas-pump"></i><span>Fuel</span>
+      </li>
+      <li class="menu-item" id="menu-efficiency" onclick="loadEfficiency()">
+        <i class="fa-solid fa-leaf"></i><span>Efficiency</span>
       </li>
       <li class="menu-item" id="menu-reports" onclick="loadReports()">
         <i class="fa-solid fa-file-invoice"></i><span>Reports</span>
@@ -123,6 +132,7 @@
 
       <!-- ===== DASHBOARD VIEW ===== -->
       <div id="view-dashboard" class="view-section active">
+        <div id="dashboardAlerts" class="alerts-container"></div>
         <section class="metrics" id="metricsContainer">
           <div class="metric-card"><h4>Total Trucks</h4><div class="value-row"><p id="totalTrucks">0</p><i class="fa-solid fa-truck-ramp-box icon-blue"></i></div></div>
           <div class="metric-card"><h4>Active Trucks</h4><div class="value-row"><p id="activeTrucksVal">0</p><i class="fa-solid fa-truck-fast icon-green"></i></div></div>
@@ -332,6 +342,66 @@
             <div class="export-card"><div class="export-icon"><i class="fa-solid fa-file-excel"></i></div><h4>Trips Excel</h4><p>Download structured data for analysis.</p><button class="btn-success" onclick="exportTripsExcel()">Export Excel</button></div>
             <div class="export-card"><div class="export-icon"><i class="fa-solid fa-gas-pump"></i></div><h4>Fuel Excel</h4><p>Download fuel expense report.</p><button class="btn-success" onclick="exportFuelExcel()">Export Excel</button></div>
             <div class="export-card"><div class="export-icon"><i class="fa-solid fa-chart-bar"></i></div><h4>Revenue PDF</h4><p>Download monthly revenue report.</p><button class="btn-danger" onclick="exportRevenuePDF()">Export PDF</button></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ===== PERFORMANCE VIEW ===== -->
+      <div id="view-performance" class="view-section" style="display:none">
+        <section class="tables">
+          <div class="table-header"><h3>Driver Performance Dashboard</h3></div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Driver Name</th><th>Total Trips</th><th>Total Fuel (L)</th><th>Revenue Generated (₹)</th></tr></thead>
+              <tbody id="performanceTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- ===== MAINTENANCE VIEW ===== -->
+      <div id="view-maintenance" class="view-section" style="display:none">
+        <section class="tables">
+          <div class="table-header">
+            <h3>Truck Maintenance Log</h3>
+            <button class="btn-primary" onclick="toggleForm('maintenanceForm')"><i class="fa-solid fa-plus"></i> Add Record</button>
+          </div>
+          <div id="maintenanceForm" class="form-panel" style="display:none">
+            <form onsubmit="submitMaintenance(event)">
+              <input type="hidden" id="mtnId">
+              <div class="form-grid">
+                <div class="form-group"><label>Truck *</label><select id="mtnTruck" required><option value="">-- Select Truck --</option></select></div>
+                <div class="form-group"><label>Service Date *</label><input type="date" id="mtnDate" required></div>
+                <div class="form-group"><label>Cost (₹) *</label><input type="number" id="mtnCost" step="0.01" required></div>
+                <div class="form-group" style="grid-column: 1 / -1"><label>Description</label><input type="text" id="mtnDesc" placeholder="e.g. Oil change, Tire replacement..."></div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">Save</button>
+                <button type="button" class="btn-secondary" onclick="cancelForm('maintenanceForm')">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Truck</th><th>Service Date</th><th>Cost (₹)</th><th>Description</th><th>Actions</th></tr></thead>
+              <tbody id="maintenanceTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- ===== EFFICIENCY VIEW ===== -->
+      <div id="view-efficiency" class="view-section" style="display:none">
+        <section class="charts">
+          <div class="chart-container"><h4>Fuel Cost Trends (6 Months)</h4><div class="canvas-wrap"><canvas id="efficiencyCostChart"></canvas></div></div>
+        </section>
+        <section class="tables">
+          <div class="table-header"><h3>Fuel Efficiency per Truck</h3></div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Truck</th><th>Total Refuels</th><th>Total Fuel (L)</th><th>Total Fuel Cost (₹)</th></tr></thead>
+              <tbody id="efficiencyTableBody"></tbody>
+            </table>
           </div>
         </section>
       </div>

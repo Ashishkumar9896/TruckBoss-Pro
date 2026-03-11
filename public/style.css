@@ -195,6 +195,22 @@ body { background: var(--bg-dark); color: var(--text-main); overflow-x: hidden; 
 
 #dynamicContentWrapper { padding: 2rem; position: relative; }
 
+/* ── Alerts ── */
+.alerts-container { margin-bottom: 1.5rem; display: none; }
+.alert-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--warning);
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+.alert-warning i { font-size: 1.1rem; }
+
 /* ── Metrics Grid ── */
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
 .metric-card {

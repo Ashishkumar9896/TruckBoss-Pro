@@ -31,10 +31,25 @@ async function deleteDriver(id) {
   return result;
 }
 
+async function getDriverPerformance() {
+  const [rows] = await pool.query(`
+    SELECT d.driver_id, d.name, 
+           COUNT(DISTINCT t.trip_id) AS total_trips,
+           COALESCE(SUM(t.amount), 0) AS revenue,
+           COALESCE((SELECT SUM(f.liters) FROM fuel_records f WHERE f.driver_id = d.driver_id), 0) AS total_fuel
+    FROM driver_details d
+    LEFT JOIN trips t ON d.driver_id = t.driver_id AND t.status = 'Completed'
+    GROUP BY d.driver_id, d.name
+    ORDER BY revenue DESC
+  `);
+  return rows;
+}
+
 module.exports = {
   getDrivers,
   getDriverById,
   createDriver,
   updateDriver,
   deleteDriver,
+  getDriverPerformance,
 };

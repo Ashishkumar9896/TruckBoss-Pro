@@ -17,6 +17,7 @@ const tripRoutes = require("./server/routes/tripRoutes");
 const fuelRoutes = require("./server/routes/fuelRoutes");
 const reportRoutes = require("./server/routes/reportRoutes");
 const dashboardRoutes = require("./server/routes/dashboardRoutes");
+const maintenanceRoutes = require("./server/routes/maintenanceRoutes");
 const { authenticateToken } = require("./server/middleware/authMiddleware");
 const errorHandler = require("./server/middleware/errorMiddleware");
 const { initSocket } = require("./server/socket");
@@ -78,6 +79,7 @@ app.use("/api", authenticateToken, tripRoutes);
 app.use("/api", authenticateToken, fuelRoutes);
 app.use("/api", authenticateToken, reportRoutes);
 app.use("/api", authenticateToken, dashboardRoutes);
+app.use("/api", authenticateToken, maintenanceRoutes);
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));

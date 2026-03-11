@@ -108,7 +108,7 @@ function switchView(name) {
   document.getElementById(`view-${name}`).style.display = 'block';
   document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
   document.getElementById(`menu-${name}`).classList.add('active');
-  const titles = { dashboard: 'Dashboard', trucks: 'Fleet Directory', drivers: 'Drivers', customers: 'Customers', trips: 'Trips', fuel: 'Fuel Records', reports: 'Reports' };
+  const titles = { dashboard: 'Dashboard', trucks: 'Fleet Directory', drivers: 'Drivers', customers: 'Customers', trips: 'Trips', fuel: 'Fuel Records', reports: 'Reports', performance: 'Driver Performance', maintenance: 'Maintenance Log', efficiency: 'Fuel Efficiency' };
   document.getElementById('pageTitle').textContent = titles[name];
   // Close mobile sidebar on navigate
   if (window.innerWidth <= 768) {
@@ -141,13 +141,24 @@ async function loadDashboard() {
   const c = document.getElementById('view-dashboard');
   showLoading(c, 'Loading dashboard metrics...');
   try {
-    const [m, a] = await Promise.all([api('/api/dashboard/metrics'), api('/api/dashboard/analytics')]);
+    const [m, a, trucks] = await Promise.all([api('/api/dashboard/metrics'), api('/api/dashboard/analytics'), api('/api/trucks')]);
     document.getElementById('totalTrucks').textContent = m.totalTrucks || 0;
     document.getElementById('activeTrucksVal').textContent = m.activeTrucks || 0;
     document.getElementById('monthlyRevenueVal').textContent = fmtCurrency(m.monthlyRevenue);
     document.getElementById('fuelExpensesVal').textContent = fmtCurrency(m.fuelExpenses);
     document.getElementById('profitVal').textContent = fmtCurrency(m.profit);
     renderCharts(a.monthlyRevenue || [], a.monthlyFuelCost || []);
+    
+    // Maintenance Alerts
+    const alertsBox = document.getElementById('dashboardAlerts');
+    const dueTrucks = trucks.filter(t => t.maintenance && t.maintenance.toLowerCase() !== 'not required' && t.maintenance.toLowerCase() !== 'none' && t.maintenance.toLowerCase() !== '');
+    if (dueTrucks.length > 0) {
+      alertsBox.innerHTML = dueTrucks.map(t => `<div class="alert-warning"><i class="fa-solid fa-triangle-exclamation"></i> Truck <strong>${esc(t.truck_no)}</strong> service due! (${esc(t.maintenance)})</div>`).join('');
+      alertsBox.style.display = 'block';
+    } else {
+      alertsBox.style.display = 'none';
+      alertsBox.innerHTML = '';
+    }
   } catch (err) { showError(c, 'Failed to load dashboard'); } finally { hideLoading(c); }
 }
 
@@ -493,6 +504,109 @@ function exportTripsPDF() { window.location.href = '/api/reports/trips/pdf'; }
 function exportTripsExcel() { window.location.href = '/api/reports/trips/excel'; }
 function exportFuelExcel() { window.location.href = '/api/reports/fuel/excel'; }
 function exportRevenuePDF() { window.location.href = '/api/reports/revenue/pdf'; }
+
+/* ══════════════════════════════════════════
+   ADVANCED MODULES (Performance, Maintenance, Efficiency)
+   ══════════════════════════════════════════ */
+
+/* Driver Performance */
+async function loadPerformance() {
+  switchView('performance');
+  const tbody = document.getElementById('performanceTableBody');
+  const tc = tbody.closest('.table-responsive');
+  showLoading(tc, 'Loading performance data...');
+  try {
+    const rows = await api('/api/drivers/performance');
+    if (!rows.length) { tbody.innerHTML = emptyRow(5, 'No performance data yet'); return; }
+    tbody.innerHTML = rows.map((r, i) => `<tr>
+      <td>${i + 1}</td><td>${esc(r.name)}</td><td>${r.total_trips}</td>
+      <td>${Number(r.total_fuel).toLocaleString('en-IN')} L</td>
+      <td>${fmtCurrency(r.revenue)}</td>
+    </tr>`).join('');
+  } catch (err) { tbody.innerHTML = errorRow(5); } finally { hideLoading(tc); }
+}
+
+/* Truck Maintenance */
+async function loadMaintenance() {
+  switchView('maintenance');
+  const tbody = document.getElementById('maintenanceTableBody');
+  const tc = tbody.closest('.table-responsive');
+  showLoading(tc, 'Loading maintenance logs...');
+  try {
+    const [rows, trucks] = await Promise.all([api('/api/maintenance'), api('/api/trucks')]);
+    setSelectOpts('mtnTruck', trucks.map(t => ({ value: t.truck_id, label: t.truck_no })));
+    if (!rows.length) { tbody.innerHTML = emptyRow(6, 'No maintenance records yet'); return; }
+    tbody.innerHTML = rows.map((m, i) => `<tr>
+      <td>${i + 1}</td><td>${esc(m.truck_no || '—')}</td><td>${fmtDate(m.service_date)}</td>
+      <td>${fmtCurrency(m.cost)}</td><td>${esc(m.description || '—')}</td>
+      <td class="actions-cell">
+        <button class="btn-icon btn-icon-danger" onclick="deleteMaintenance(${m.maintenance_id})"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+  } catch (err) { tbody.innerHTML = errorRow(6); } finally { hideLoading(tc); }
+}
+
+async function submitMaintenance(e) {
+  e.preventDefault();
+  const id = document.getElementById('mtnId').value;
+  const body = { truck_id: document.getElementById('mtnTruck').value, service_date: document.getElementById('mtnDate').value, cost: document.getElementById('mtnCost').value, description: document.getElementById('mtnDesc').value };
+  try {
+    if (id) { await api(`/api/maintenance/${id}`, { method: 'PUT', body: JSON.stringify(body) }); showToast('Record updated', 'success'); }
+    else { await api('/api/maintenance', { method: 'POST', body: JSON.stringify(body) }); showToast('Record added', 'success'); }
+    cancelForm('maintenanceForm'); resetMaintenanceForm(); loadMaintenance();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function deleteMaintenance(id) {
+  if (!confirm('Delete this maintenance record?')) return;
+  try { await api(`/api/maintenance/${id}`, { method: 'DELETE' }); showToast('Deleted', 'success'); loadMaintenance(); } catch (err) { showToast(err.message, 'error'); }
+}
+
+function resetMaintenanceForm() {
+  ['mtnId', 'mtnTruck', 'mtnDate', 'mtnCost', 'mtnDesc'].forEach(id => document.getElementById(id).value = '');
+}
+
+/* Fuel Efficiency */
+let efficiencyCostChart = null;
+async function loadEfficiency() {
+  switchView('efficiency');
+  const tbody = document.getElementById('efficiencyTableBody');
+  const tc = tbody.closest('.table-responsive');
+  showLoading(tc, 'Loading efficiency metrics...');
+  try {
+    const data = await api('/api/dashboard/efficiency');
+    const rows = data.fuelByTruck || [];
+    if (!rows.length) { tbody.innerHTML = emptyRow(5, 'No efficiency data yet'); }
+    else {
+      tbody.innerHTML = rows.map((r, i) => `<tr>
+        <td>${i + 1}</td><td>${esc(r.truck_no || '—')}</td><td>${r.refuels}</td>
+        <td>${Number(r.total_liters).toLocaleString('en-IN')} L</td>
+        <td>${fmtCurrency(r.total_cost)}</td>
+      </tr>`).join('');
+    }
+
+    /* Render Chart */
+    const trend = data.monthlyTrend || [];
+    Chart.defaults.color = '#9ca3af';
+    Chart.defaults.font.family = 'Inter';
+    if (efficiencyCostChart) efficiencyCostChart.destroy();
+    efficiencyCostChart = new Chart(document.getElementById('efficiencyCostChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: trend.map(d => d.month),
+        datasets: [{
+          label: 'Total Fuel Cost (₹)',
+          data: trend.map(d => d.cost),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  } catch (err) { tbody.innerHTML = errorRow(5); } finally { hideLoading(tc); }
+}
 
 /* ── Socket.IO ── */
 function initRealtime() {

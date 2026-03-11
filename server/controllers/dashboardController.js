@@ -134,9 +134,51 @@ async function getDashboardAnalytics(req, res, next) {
   }
 }
 
+async function getFuelEfficiency(req, res, next) {
+  try {
+    const [fuelByTruck] = await pool.query(
+      `SELECT t.truck_no,
+              COALESCE(SUM(f.liters), 0) AS total_liters,
+              COALESCE(SUM(f.price), 0) AS total_cost,
+              COUNT(f.fuel_id) AS refuels
+       FROM truck_details t
+       LEFT JOIN fuel_details f ON t.truck_id = f.truck_id
+       GROUP BY t.truck_id, t.truck_no
+       ORDER BY total_cost DESC`
+    );
+
+    const [monthlyTrend] = await pool.query(
+      `SELECT DATE_FORMAT(fuel_date, '%Y-%m') AS month,
+              COALESCE(SUM(liters), 0) AS liters,
+              COALESCE(SUM(price), 0) AS cost
+       FROM fuel_details
+       WHERE fuel_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
+       GROUP BY DATE_FORMAT(fuel_date, '%Y-%m')
+       ORDER BY month ASC`
+    );
+
+    return res.json({
+      fuelByTruck: fuelByTruck.map(row => ({
+        truck_no: row.truck_no,
+        total_liters: Number(row.total_liters || 0),
+        total_cost: Number(row.total_cost || 0),
+        refuels: Number(row.refuels || 0)
+      })),
+      monthlyTrend: monthlyTrend.map(row => ({
+        month: row.month,
+        liters: Number(row.liters || 0),
+        cost: Number(row.cost || 0)
+      }))
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   getStats,
   getRevenueChartData,
   getDashboardMetrics,
   getDashboardAnalytics,
+  getFuelEfficiency,
 };

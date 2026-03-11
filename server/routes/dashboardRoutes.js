@@ -6,6 +6,7 @@ const {
   getRevenueChartData,
   getDashboardMetrics,
   getDashboardAnalytics,
+  getFuelEfficiency,
 } = require("../controllers/dashboardController");
 
 const router = express.Router();
@@ -27,6 +28,12 @@ router.get(
   "/dashboard/analytics",
   authorizeRoles("admin", "manager"),
   asyncHandler(getDashboardAnalytics)
+);
+
+router.get(
+  "/dashboard/efficiency",
+  authorizeRoles("admin", "manager"),
+  asyncHandler(getFuelEfficiency)
 );
 
 module.exports = router;

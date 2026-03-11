@@ -4,6 +4,7 @@ const {
   createDriver,
   updateDriver,
   deleteDriver,
+  getDriverPerformance,
 } = require("../models/driverModel");
 
 async function listDrivers(req, res, next) {
@@ -82,10 +83,20 @@ async function removeDriver(req, res, next) {
   }
 }
 
+async function getPerformance(req, res, next) {
+  try {
+    const rows = await getDriverPerformance();
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   listDrivers,
   getDriver,
   addDriver,
   editDriver,
   removeDriver,
+  getPerformance,
 };

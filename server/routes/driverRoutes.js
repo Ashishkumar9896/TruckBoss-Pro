@@ -5,6 +5,7 @@ const {
   addDriver,
   editDriver,
   removeDriver,
+  getPerformance,
 } = require("../controllers/driverController");
 const asyncHandler = require("../middleware/asyncHandler");
 const { authorizeRoles } = require("../middleware/roleMiddleware");
@@ -12,6 +13,7 @@ const { validateDriver, handleValidationErrors } = require("../middleware/valida
 
 const router = express.Router();
 
+router.get("/drivers/performance", authorizeRoles("admin", "manager"), asyncHandler(getPerformance));
 router.get("/drivers", authorizeRoles("admin", "manager"), asyncHandler(listDrivers));
 router.get("/drivers/:id", authorizeRoles("admin", "manager"), asyncHandler(getDriver));
 router.post(
