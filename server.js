@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ override: true });
 const express = require("express");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
@@ -13,17 +13,23 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // ── Rate limiters ──────────────────────────────────────────────────────────────
+const rateLimitWindowMs = (Number(process.env.RATE_LIMIT_WINDOW_MINUTES) || 15) * 60 * 1000;
+const authRateLimitMax = Number(process.env.AUTH_RATE_LIMIT_MAX) || 100;
+const apiRateLimitMax = Number(process.env.API_RATE_LIMIT_MAX) || 2000;
+
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
+  windowMs: rateLimitWindowMs,
+  max: authRateLimitMax,
+  // In app usage, successful auth should not quickly exhaust the bucket.
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later." },
 });
 
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 300,
+  windowMs: rateLimitWindowMs,
+  max: apiRateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later." },
@@ -131,6 +137,7 @@ app.get("/api/dashboard/stats", apiLimiter, authenticateToken, async (req, res) 
   try {
     const [[customers]] = await pool.query("SELECT COUNT(*) AS count FROM customers");
     const [[revenue]] = await pool.query("SELECT COALESCE(SUM(amount_paid), 0) AS total FROM customers");
+    const [[balance]] = await pool.query("SELECT COALESCE(SUM(balance), 0) AS total FROM customers");
     const [[trucks]] = await pool.query("SELECT COUNT(*) AS count FROM truck_details");
     const [truckStatus] = await pool.query(
       "SELECT status, COUNT(*) AS count FROM truck_details GROUP BY status"
@@ -138,6 +145,8 @@ app.get("/api/dashboard/stats", apiLimiter, authenticateToken, async (req, res) 
     const [[trips]] = await pool.query("SELECT COUNT(*) AS count FROM trips");
     const [[drivers]] = await pool.query("SELECT COUNT(*) AS count FROM driver_details");
     const [[fuel]] = await pool.query("SELECT COALESCE(SUM(price), 0) AS total FROM fuel_details");
+    const billedTotal = Number(revenue.total) + Number(balance.total);
+    const collectionRate = billedTotal > 0 ? (Number(revenue.total) / billedTotal) * 100 : 0;
 
     const statusMap = {};
     truckStatus.forEach((r) => { statusMap[r.status] = r.count; });
@@ -145,6 +154,7 @@ app.get("/api/dashboard/stats", apiLimiter, authenticateToken, async (req, res) 
     return res.json({
       customers: customers.count,
       revenue: revenue.total,
+      balanceAmount: balance.total,
       trucks: trucks.count,
       trucksAvailable: statusMap["Available"] || 0,
       trucksInUse: statusMap["In Use"] || 0,
@@ -152,6 +162,7 @@ app.get("/api/dashboard/stats", apiLimiter, authenticateToken, async (req, res) 
       trips: trips.count,
       drivers: drivers.count,
       fuelCost: fuel.total,
+      collectionRate: Number(collectionRate.toFixed(2)),
     });
   } catch (err) {
     console.error(err);

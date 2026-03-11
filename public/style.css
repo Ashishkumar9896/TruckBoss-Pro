@@ -330,6 +330,11 @@ body {
 .stat-icon.purple { background: rgba(168,85,247,.18); color: #c084fc; }
 
 .stat-label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .stat-note {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
 .stat-value { font-size: 1.6rem; font-weight: 800; }
 
 /* ── Charts ───────────────────────────────────────────────────────────── */

@@ -101,15 +101,6 @@ function enterDashboard(user) {
   history.pushState({ section: "dashboard" }, "", "/dashboard");
 }
 
-// Auto-login from stored token
-(function autoLogin() {
-  const token = localStorage.getItem("tbToken");
-  const user = JSON.parse(localStorage.getItem("tbUser") || "null");
-  if (token && user) {
-    enterDashboard(user);
-  }
-})();
-
 // Browser back/forward
 window.addEventListener("popstate", (e) => {
   const section = e.state && e.state.section;
@@ -160,6 +151,15 @@ function navigate(section, pushState = true) {
 
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
+// Auto-login from stored token (after navigation helpers are initialized)
+(function autoLogin() {
+  const token = localStorage.getItem("tbToken");
+  const user = JSON.parse(localStorage.getItem("tbUser") || "null");
+  if (token && user) {
+    enterDashboard(user);
+  }
+})();
+
 // ── Form toggle helpers ────────────────────────────────────────────────────────
 function toggleForm(formId) {
   const el = document.getElementById(formId);
@@ -191,6 +191,8 @@ async function loadDashboard() {
 
 function renderStatCards(s) {
   const fmt = (n) => Number(n).toLocaleString("en-IN");
+  const money = (n) => `₹${fmt(Number(n) || 0)}`;
+  const rate = Number(s.collectionRate || 0).toFixed(2);
   document.getElementById("dashboardCards").innerHTML = `
     <div class="stat-card">
       <div class="stat-icon orange"><i class="ri-group-line"></i></div>
@@ -199,8 +201,15 @@ function renderStatCards(s) {
     </div>
     <div class="stat-card">
       <div class="stat-icon green"><i class="ri-money-rupee-circle-line"></i></div>
-      <div class="stat-label">Total Revenue</div>
-      <div class="stat-value">₹${fmt(s.revenue)}</div>
+      <div class="stat-label">Collected Revenue</div>
+      <div class="stat-value">${money(s.revenue)}</div>
+      <div class="stat-note">Collection Rate: ${rate}%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="ri-wallet-3-line"></i></div>
+      <div class="stat-label">Outstanding Balance</div>
+      <div class="stat-value">${money(s.balanceAmount)}</div>
+      <div class="stat-note">Pending customer dues</div>
     </div>
     <div class="stat-card">
       <div class="stat-icon blue"><i class="ri-truck-line"></i></div>
@@ -229,13 +238,13 @@ function renderStatCards(s) {
     </div>
     <div class="stat-card">
       <div class="stat-icon orange"><i class="ri-map-pin-2-line"></i></div>
-      <div class="stat-label">Total Trips</div>
+      <div class="stat-label">Trips Logged</div>
       <div class="stat-value">${s.trips}</div>
     </div>
     <div class="stat-card">
       <div class="stat-icon red"><i class="ri-fuel-line"></i></div>
-      <div class="stat-label">Fuel Cost</div>
-      <div class="stat-value">₹${fmt(s.fuelCost)}</div>
+      <div class="stat-label">Fuel Expense</div>
+      <div class="stat-value">${money(s.fuelCost)}</div>
     </div>
   `;
 }
