@@ -302,9 +302,7 @@ function initRealtime() {
     if (appState.currentSection === "trips") {
       loadTrips(appState.trips.page);
     }
-    if (!isDriver()) {
-      loadDashboard();
-    }
+    queueDashboardRefresh();
     showToast("New trip recorded", "success");
   });
 
@@ -312,9 +310,7 @@ function initRealtime() {
     if (appState.currentSection === "fuel") {
       loadFuel();
     }
-    if (!isDriver()) {
-      loadDashboard();
-    }
+    queueDashboardRefresh();
     showToast("Fuel log updated", "info");
   });
 
@@ -410,6 +406,8 @@ function debounce(fn, delay) {
 let revenueChart = null;
 let truckChart = null;
 let fuelTrendChart = null;
+let dashboardRefreshTimer = null;
+let dashboardLoadInFlight = null;
 
 function destroyChart(chart) {
   if (chart) {
@@ -420,17 +418,38 @@ function destroyChart(chart) {
 async function loadDashboard() {
   if (isDriver()) return;
 
-  try {
-    const [metrics, analytics] = await Promise.all([
-      api("/api/dashboard/metrics"),
-      api("/api/dashboard/analytics"),
-    ]);
-    renderStatCards(metrics);
-    renderRevenueChart(analytics.monthlyRevenue || []);
-    renderFuelTrendChart(analytics.monthlyFuelCost || []);
-  } catch (err) {
-    showToast(`Failed to load dashboard: ${err.message}`, "error");
+  if (dashboardLoadInFlight) {
+    return dashboardLoadInFlight;
   }
+
+  dashboardLoadInFlight = (async () => {
+    try {
+      const [metrics, analytics] = await Promise.all([
+        api("/api/dashboard/metrics"),
+        api("/api/dashboard/analytics"),
+      ]);
+      renderStatCards(metrics);
+      renderRevenueChart(analytics.monthlyRevenue || []);
+      renderFuelTrendChart(analytics.monthlyFuelCost || []);
+    } catch (err) {
+      showToast(`Failed to load dashboard: ${err.message}`, "error");
+    } finally {
+      dashboardLoadInFlight = null;
+    }
+  })();
+
+  return dashboardLoadInFlight;
+}
+
+function queueDashboardRefresh() {
+  if (isDriver() || appState.currentSection !== "dashboard") {
+    return;
+  }
+
+  clearTimeout(dashboardRefreshTimer);
+  dashboardRefreshTimer = setTimeout(() => {
+    loadDashboard();
+  }, 400);
 }
 
 function renderStatCards(metrics) {
