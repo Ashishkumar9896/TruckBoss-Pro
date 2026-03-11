@@ -36,7 +36,7 @@ async function getDriverPerformance() {
     SELECT d.driver_id, d.name, 
            COUNT(DISTINCT t.trip_id) AS total_trips,
            COALESCE(SUM(t.amount), 0) AS revenue,
-           COALESCE((SELECT SUM(f.liters) FROM fuel_records f WHERE f.driver_id = d.driver_id), 0) AS total_fuel
+           COALESCE((SELECT SUM(f.liters) FROM fuel_details f WHERE f.driver_id = d.driver_id), 0) AS total_fuel
     FROM driver_details d
     LEFT JOIN trips t ON d.driver_id = t.driver_id AND t.status = 'Completed'
     GROUP BY d.driver_id, d.name
