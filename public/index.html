@@ -53,23 +53,62 @@
 </div>
 
 <!-- ========== MAIN APP ========== -->
+<!-- Mobile overlay backdrop -->
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
 <div id="dashboardPage" class="app" style="display:none">
-  <aside class="sidebar">
-    <div class="sidebar-brand"><i class="fa-solid fa-truck-fast"></i><span>TruckBoss</span></div>
+  <aside class="sidebar" id="mainSidebar">
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="fa-solid fa-truck-fast"></i></div>
+      <span class="logo-text">TruckBoss</span>
+    </div>
+
+    <!-- Collapse Toggle -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <!-- Navigation -->
     <ul class="menu">
-      <li onclick="loadDashboard()" id="menu-dashboard" class="active"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
-      <li onclick="loadTrucks()" id="menu-trucks"><i class="fa-solid fa-truck"></i> Trucks</li>
-      <li onclick="loadDrivers()" id="menu-drivers"><i class="fa-solid fa-id-card"></i> Drivers</li>
-      <li onclick="loadCustomers()" id="menu-customers"><i class="fa-solid fa-users"></i> Customers</li>
-      <li onclick="loadTrips()" id="menu-trips"><i class="fa-solid fa-route"></i> Trips</li>
-      <li onclick="loadFuel()" id="menu-fuel"><i class="fa-solid fa-gas-pump"></i> Fuel</li>
-      <li onclick="loadReports()" id="menu-reports"><i class="fa-solid fa-file-invoice"></i> Reports</li>
+      <li class="menu-item active" id="menu-dashboard" onclick="loadDashboard()">
+        <i class="fa-solid fa-chart-line"></i><span>Dashboard</span>
+      </li>
+      <li class="menu-item" id="menu-trucks" onclick="loadTrucks()">
+        <i class="fa-solid fa-truck"></i><span>Trucks</span>
+      </li>
+      <li class="menu-item" id="menu-drivers" onclick="loadDrivers()">
+        <i class="fa-solid fa-id-card"></i><span>Drivers</span>
+      </li>
+      <li class="menu-item" id="menu-customers" onclick="loadCustomers()">
+        <i class="fa-solid fa-users"></i><span>Customers</span>
+      </li>
+      <li class="menu-item" id="menu-trips" onclick="loadTrips()">
+        <i class="fa-solid fa-route"></i><span>Trips</span>
+      </li>
+      <li class="menu-item" id="menu-fuel" onclick="loadFuel()">
+        <i class="fa-solid fa-gas-pump"></i><span>Fuel</span>
+      </li>
+      <li class="menu-item" id="menu-reports" onclick="loadReports()">
+        <i class="fa-solid fa-file-invoice"></i><span>Reports</span>
+      </li>
     </ul>
+
+    <!-- Sidebar Footer -->
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <img src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff" alt="Avatar" class="sidebar-avatar" id="sidebarAvatar">
+        <span class="sidebar-username" id="sidebarUsername">Admin</span>
+      </div>
+    </div>
   </aside>
 
   <main class="content">
     <header class="topbar">
-      <div class="title" id="pageTitle">Dashboard</div>
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+        <div class="title" id="pageTitle">Dashboard</div>
+      </div>
       <div class="user-info">
         <div class="notifications"><i class="fa-regular fa-bell"></i><span class="notif-badge" id="alertBadge">0</span></div>
         <div class="user">

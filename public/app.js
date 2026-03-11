@@ -90,7 +90,14 @@ function enterDashboard(user) {
   appState.currentUser = user;
   document.getElementById('landingPage').style.display = 'none';
   document.getElementById('dashboardPage').style.display = 'flex';
-  document.getElementById('username').textContent = user.full_name || user.email.split('@')[0];
+  const displayName = user.full_name || user.email.split('@')[0];
+  document.getElementById('username').textContent = displayName;
+  // Sync sidebar user
+  const sbUser = document.getElementById('sidebarUsername');
+  const sbAvatar = document.getElementById('sidebarAvatar');
+  if (sbUser) sbUser.textContent = displayName;
+  if (sbAvatar) sbAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3b82f6&color=fff`;
+  document.getElementById('userAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3b82f6&color=fff`;
   initRealtime();
   loadDashboard();
 }
@@ -99,10 +106,29 @@ function enterDashboard(user) {
 function switchView(name) {
   document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
   document.getElementById(`view-${name}`).style.display = 'block';
-  document.querySelectorAll('.menu li').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
   document.getElementById(`menu-${name}`).classList.add('active');
   const titles = { dashboard: 'Dashboard', trucks: 'Fleet Directory', drivers: 'Drivers', customers: 'Customers', trips: 'Trips', fuel: 'Fuel Records', reports: 'Reports' };
   document.getElementById('pageTitle').textContent = titles[name];
+  // Close mobile sidebar on navigate
+  if (window.innerWidth <= 768) {
+    document.getElementById('mainSidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+  }
+}
+
+/* ── Sidebar Toggle ── */
+function toggleSidebar() {
+  const sidebar = document.getElementById('mainSidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (window.innerWidth <= 768) {
+    // Mobile: slide in/out
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('active');
+  } else {
+    // Desktop: collapse/expand
+    sidebar.classList.toggle('collapsed');
+  }
 }
 
 /* ══════════════════════════════════════════
