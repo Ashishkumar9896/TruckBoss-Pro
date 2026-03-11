@@ -46,7 +46,6 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/vendor/chart", express.static(path.join(__dirname, "node_modules", "chart.js", "dist")));
 
 const rateLimitWindowMs = 15 * 60 * 1000;
-const apiRateLimitMax = Number(process.env.API_RATE_LIMIT_MAX || 500);
 
 const authLimiter = rateLimit({
   windowMs: rateLimitWindowMs,
@@ -59,7 +58,7 @@ const authLimiter = rateLimit({
 
 const apiLimiter = rateLimit({
   windowMs: rateLimitWindowMs,
-  max: apiRateLimitMax,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later." },
