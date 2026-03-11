@@ -103,10 +103,10 @@ async function api(path, options = {}) {
 function showToast(message, type = "info") {
   const toast = document.getElementById("toast");
   toast.textContent = message;
-  toast.className = `toast show ${type}`;
+  toast.className = `tb-toast show ${type}`;
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => {
-    toast.className = "toast";
+    toast.className = "tb-toast";
   }, 3500);
 }
 
@@ -179,6 +179,10 @@ function downloadFuelExcel() {
 
 function downloadRevenueExcel() {
   return downloadReport("/api/reports/revenue/monthly/excel", "monthly-revenue-report.xlsx");
+}
+
+function downloadRevenuePDF() {
+  return downloadReport("/api/reports/revenue/pdf", "monthly-revenue-report.pdf");
 }
 
 async function handleLogin(event) {
@@ -262,7 +266,7 @@ function enterDashboard(user) {
 function applyRolePermissions(user) {
   const allowedSections = sectionAccess[user.role] || [];
 
-  document.querySelectorAll(".nav-item").forEach((button) => {
+  document.querySelectorAll(".nav-btn").forEach((button) => {
     button.style.display = allowedSections.includes(button.dataset.section) ? "flex" : "none";
   });
 
@@ -348,7 +352,7 @@ function navigate(section, pushState = true) {
     target.style.display = "block";
   }
 
-  document.querySelectorAll(".nav-item").forEach((button) => {
+  document.querySelectorAll(".nav-btn").forEach((button) => {
     button.classList.toggle("active", button.dataset.section === safeSection);
   });
 
@@ -458,43 +462,24 @@ function queueDashboardRefresh() {
 }
 
 function renderStatCards(metrics) {
-  document.getElementById("dashboardCards").innerHTML = `
-    <article class="stat-card highlight-card">
-      <div class="stat-icon blue"><i class="ri-truck-line"></i></div>
-      <div class="stat-copy">
-        <span class="stat-label">Total Trucks</span>
-        <strong class="stat-value">${Number(metrics.totalTrucks || 0).toLocaleString("en-IN")}</strong>
+  const cards = [
+    { icon: 'ri-truck-line', bg: 'bg-blue-500/10', text: 'text-blue-400', label: 'Total Trucks', value: Number(metrics.totalTrucks || 0).toLocaleString("en-IN") },
+    { icon: 'ri-route-line', bg: 'bg-cyan-500/10', text: 'text-cyan-400', label: 'Active Trucks', value: Number(metrics.activeTrucks || 0).toLocaleString("en-IN") },
+    { icon: 'ri-money-rupee-circle-line', bg: 'bg-amber-500/10', text: 'text-amber-400', label: 'Monthly Revenue', value: formatCurrency(metrics.monthlyRevenue) },
+    { icon: 'ri-fuel-line', bg: 'bg-red-500/10', text: 'text-red-400', label: 'Fuel Expenses', value: formatCurrency(metrics.fuelExpenses) },
+    { icon: 'ri-line-chart-line', bg: 'bg-emerald-500/10', text: 'text-emerald-400', label: 'Profit', value: formatCurrency(metrics.profit) },
+  ];
+  document.getElementById("dashboardCards").innerHTML = cards.map((c, i) => `
+    <article class="tb-panel flex items-center gap-4 ${i === 0 ? 'ring-1 ring-orange-500/20' : ''}">
+      <div class="w-12 h-12 rounded-xl ${c.bg} ${c.text} flex items-center justify-center text-xl shrink-0">
+        <i class="${c.icon}"></i>
+      </div>
+      <div class="flex flex-col gap-0.5 min-w-0">
+        <span class="text-[0.7rem] font-bold uppercase tracking-wider text-slate-400">${c.label}</span>
+        <strong class="text-xl font-extrabold tracking-tight">${c.value}</strong>
       </div>
     </article>
-    <article class="stat-card">
-      <div class="stat-icon teal"><i class="ri-route-line"></i></div>
-      <div class="stat-copy">
-        <span class="stat-label">Active Trucks</span>
-        <strong class="stat-value">${Number(metrics.activeTrucks || 0).toLocaleString("en-IN")}</strong>
-      </div>
-    </article>
-    <article class="stat-card">
-      <div class="stat-icon gold"><i class="ri-money-rupee-circle-line"></i></div>
-      <div class="stat-copy">
-        <span class="stat-label">Monthly Revenue</span>
-        <strong class="stat-value">${formatCurrency(metrics.monthlyRevenue)}</strong>
-      </div>
-    </article>
-    <article class="stat-card">
-      <div class="stat-icon red"><i class="ri-fuel-line"></i></div>
-      <div class="stat-copy">
-        <span class="stat-label">Fuel Expenses</span>
-        <strong class="stat-value">${formatCurrency(metrics.fuelExpenses)}</strong>
-      </div>
-    </article>
-    <article class="stat-card">
-      <div class="stat-icon green"><i class="ri-line-chart-line"></i></div>
-      <div class="stat-copy">
-        <span class="stat-label">Profit</span>
-        <strong class="stat-value">${formatCurrency(metrics.profit)}</strong>
-      </div>
-    </article>
-  `;
+  `).join("");
 }
 
 function renderRevenueChart(data) {
@@ -574,9 +559,9 @@ async function loadCustomers() {
     tbody.innerHTML = rows.map((customer, index) => {
       const actions = canManageCustomers()
         ? `
-          <div class="table-actions">
-            <button class="icon-btn" onclick="editCustomer(${customer.customer_id})"><i class="ri-edit-line"></i></button>
-            ${canDeleteRecords() ? `<button class="icon-btn danger" onclick="deleteCustomer(${customer.customer_id})"><i class="ri-delete-bin-line"></i></button>` : ""}
+          <div class="tbl-actions">
+            <button class="tbl-btn" onclick="editCustomer(${customer.customer_id})"><i class="ri-edit-line"></i></button>
+            ${canDeleteRecords() ? `<button class="tbl-btn danger" onclick="deleteCustomer(${customer.customer_id})"><i class="ri-delete-bin-line"></i></button>` : ""}
           </div>
         `
         : '<span class="muted-label">Read only</span>';
@@ -673,9 +658,9 @@ async function loadDrivers() {
     tbody.innerHTML = rows.map((driver, index) => {
       const actions = canManageDriversAndTrucks()
         ? `
-          <div class="table-actions">
-            <button class="icon-btn" onclick="editDriver(${driver.driver_id})"><i class="ri-edit-line"></i></button>
-            <button class="icon-btn danger" onclick="deleteDriver(${driver.driver_id})"><i class="ri-delete-bin-line"></i></button>
+          <div class="tbl-actions">
+            <button class="tbl-btn" onclick="editDriver(${driver.driver_id})"><i class="ri-edit-line"></i></button>
+            <button class="tbl-btn danger" onclick="deleteDriver(${driver.driver_id})"><i class="ri-delete-bin-line"></i></button>
           </div>
         `
         : '<span class="muted-label">Read only</span>';
@@ -773,9 +758,9 @@ async function loadTrucks() {
       tbody.innerHTML = rows.map((truck, index) => {
         const actions = canManageDriversAndTrucks()
           ? `
-            <div class="table-actions">
-              <button class="icon-btn" onclick="editTruck(${truck.truck_id})"><i class="ri-edit-line"></i></button>
-              <button class="icon-btn danger" onclick="deleteTruck(${truck.truck_id})"><i class="ri-delete-bin-line"></i></button>
+            <div class="tbl-actions">
+              <button class="tbl-btn" onclick="editTruck(${truck.truck_id})"><i class="ri-edit-line"></i></button>
+              <button class="tbl-btn danger" onclick="deleteTruck(${truck.truck_id})"><i class="ri-delete-bin-line"></i></button>
             </div>
           `
           : '<span class="muted-label">Read only</span>';
@@ -981,9 +966,9 @@ function renderTripTable() {
   tbody.innerHTML = appState.trips.rows.map((trip, index) => {
     const actions = canManageTrips()
       ? `
-        <div class="table-actions">
-          <button class="icon-btn" onclick="editTrip(${trip.trip_id})"><i class="ri-edit-line"></i></button>
-          ${canDeleteRecords() ? `<button class="icon-btn danger" onclick="deleteTrip(${trip.trip_id})"><i class="ri-delete-bin-line"></i></button>` : ""}
+        <div class="tbl-actions">
+          <button class="tbl-btn" onclick="editTrip(${trip.trip_id})"><i class="ri-edit-line"></i></button>
+          ${canDeleteRecords() ? `<button class="tbl-btn danger" onclick="deleteTrip(${trip.trip_id})"><i class="ri-delete-bin-line"></i></button>` : ""}
         </div>
       `
       : '<span class="muted-label">Assigned</span>';
@@ -1138,7 +1123,7 @@ async function loadFuel() {
         <td>${Number(fuel.liters || 0).toLocaleString("en-IN")} L</td>
         <td>${formatCurrency(fuel.price)}</td>
         <td>${formatDate(fuel.fuel_date)}</td>
-        <td>${canDeleteRecords() ? `<div class="table-actions"><button class="icon-btn danger" onclick="deleteFuel(${fuel.fuel_id})"><i class="ri-delete-bin-line"></i></button></div>` : '<span class="muted-label">Read only</span>'}</td>
+        <td>${canDeleteRecords() ? `<div class="tbl-actions"><button class="tbl-btn danger" onclick="deleteFuel(${fuel.fuel_id})"><i class="ri-delete-bin-line"></i></button></div>` : '<span class="muted-label">Read only</span>'}</td>
       </tr>
     `).join("");
   } catch (err) {
@@ -1187,7 +1172,7 @@ function resetFuelForm() {
 }
 
 function emptyTableRow(colspan, label) {
-  return `<tr><td colspan="${colspan}" class="empty-state-cell">${esc(label)}</td></tr>`;
+  return `<tr><td colspan="${colspan}" class="empty-row">${esc(label)}</td></tr>`;
 }
 
 function formatCurrency(value) {
