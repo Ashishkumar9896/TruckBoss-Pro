@@ -52,18 +52,21 @@ const allowedOrigins = [
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow same-origin requests (no Origin header).
       if (!origin) return callback(null, true);
 
-      // Normalize both origin and allowed list to handle trailing slashes.
       const normalizedOrigin = origin.replace(/\/$/, "");
-      const isAllowed = allowedOrigins.some((allowed) => {
-        return allowed.replace(/\/$/, "") === normalizedOrigin;
-      });
+      const isExplicitlyAllowed = allowedOrigins.some(
+        (allowed) => allowed.replace(/\/$/, "") === normalizedOrigin
+      );
 
-      if (isAllowed) return callback(null, true);
+      // Support for Render subdomains automatically
+      const isRenderDomain = normalizedOrigin.endsWith(".onrender.com");
 
-      console.error(`[CORS] Request from ${origin} blocked. Allowed: ${allowedOrigins.join(", ")}`);
+      if (isExplicitlyAllowed || isRenderDomain) {
+        return callback(null, true);
+      }
+
+      console.error(`[CORS REJECTED] Origin: "${origin}" | Allowed: ${allowedOrigins.join(", ")}`);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
