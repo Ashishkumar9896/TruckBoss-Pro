@@ -46,6 +46,9 @@ async function getDashboardMetrics(req, res, next) {
       `SELECT
           (SELECT COUNT(*) FROM truck_details) AS totalTrucks,
           (SELECT COUNT(*) FROM truck_details WHERE status = 'In Use') AS activeTrucks,
+          (SELECT COUNT(*) FROM driver_details) AS totalDrivers,
+          (SELECT COUNT(*) FROM trips) AS totalTrips,
+          (SELECT COALESCE(SUM(amount), 0) FROM trips) AS totalRevenue,
           (
             SELECT COALESCE(SUM(amount), 0)
             FROM trips
@@ -63,6 +66,9 @@ async function getDashboardMetrics(req, res, next) {
     return res.json({
       totalTrucks: Number(metrics.totalTrucks || 0),
       activeTrucks: Number(metrics.activeTrucks || 0),
+      totalDrivers: Number(metrics.totalDrivers || 0),
+      totalTrips: Number(metrics.totalTrips || 0),
+      totalRevenue: Number(metrics.totalRevenue || 0),
       monthlyRevenue: Number(metrics.monthlyRevenue || 0),
       fuelExpenses: Number(metrics.fuelExpenses || 0),
       profit: Number(metrics.profit || 0),

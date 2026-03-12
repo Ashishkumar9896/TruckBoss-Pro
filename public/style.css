@@ -265,6 +265,8 @@ body { background: var(--app-bg); color: var(--text-main); overflow-x: hidden; m
 .icon-yellow { color: var(--warning); }
 .icon-red { color: var(--danger); }
 .icon-purple { color: var(--info); }
+.icon-cyan { color: #06b6d4; }
+.icon-orange { color: #f97316; }
 
 /* ── Charts ── */
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }

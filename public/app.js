@@ -190,8 +190,9 @@ async function loadDashboard() {
       api('/api/dashboard/maintenance-forecast')
     ]);
     document.getElementById('totalTrucks').textContent = m.totalTrucks || 0;
-    document.getElementById('activeTrucksVal').textContent = m.activeTrucks || 0;
-    document.getElementById('monthlyRevenueVal').textContent = fmtCurrency(m.monthlyRevenue);
+    document.getElementById('totalDriversVal').textContent = m.totalDrivers || 0;
+    document.getElementById('totalTripsVal').textContent = m.totalTrips || 0;
+    document.getElementById('totalRevenueVal').textContent = fmtCurrency(m.totalRevenue);
     document.getElementById('fuelExpensesVal').textContent = fmtCurrency(m.fuelExpenses);
     document.getElementById('profitVal').textContent = fmtCurrency(m.profit);
     renderCharts(a.monthlyRevenue || [], a.monthlyFuelCost || []);
