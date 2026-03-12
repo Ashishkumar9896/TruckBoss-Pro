@@ -1,12 +1,12 @@
 const pool = require("../config/db");
 
 async function getDrivers() {
-  const [rows] = await pool.query("SELECT * FROM driver_details ORDER BY created_at DESC");
+  const [rows] = await pool.query("SELECT * FROM driver_details WHERE is_active = TRUE ORDER BY created_at DESC");
   return rows;
 }
 
 async function getDriverById(id) {
-  const [rows] = await pool.query("SELECT * FROM driver_details WHERE driver_id = ?", [id]);
+  const [rows] = await pool.query("SELECT * FROM driver_details WHERE driver_id = ? AND is_active = TRUE", [id]);
   return rows;
 }
 
@@ -27,7 +27,7 @@ async function updateDriver(id, name, licenceNo, phoneNo, address, salary, statu
 }
 
 async function deleteDriver(id) {
-  const [result] = await pool.query("DELETE FROM driver_details WHERE driver_id = ?", [id]);
+  const [result] = await pool.query("UPDATE driver_details SET is_active = FALSE WHERE driver_id = ?", [id]);
   return result;
 }
 
@@ -36,11 +36,13 @@ async function getDriverPerformance() {
     SELECT d.driver_id, d.name, 
            COUNT(DISTINCT t.trip_id) AS total_trips,
            COALESCE(SUM(t.amount), 0) AS revenue,
-           COALESCE((SELECT SUM(f.liters) FROM fuel_details f WHERE f.driver_id = d.driver_id), 0) AS total_fuel
+           COALESCE((SELECT SUM(f.liters) FROM fuel_details f WHERE f.driver_id = d.driver_id), 0) AS total_fuel,
+           (COUNT(DISTINCT t.trip_id) * 50) + (COALESCE(SUM(t.amount), 0) * 0.01) AS score
     FROM driver_details d
     LEFT JOIN trips t ON d.driver_id = t.driver_id AND t.status = 'Completed'
+    WHERE d.is_active = TRUE
     GROUP BY d.driver_id, d.name
-    ORDER BY revenue DESC
+    ORDER BY score DESC
   `);
   return rows;
 }

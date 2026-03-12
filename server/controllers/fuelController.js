@@ -7,8 +7,17 @@ const { getIO } = require("../socket");
 
 async function listFuel(req, res, next) {
   try {
-    const rows = await getFuelRecords();
-    return res.json(rows);
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
+    const result = await getFuelRecords(limit, offset);
+    return res.json({
+      page,
+      limit,
+      totalRecords: result.totalRecords,
+      data: result.data
+    });
   } catch (err) {
     return next(err);
   }

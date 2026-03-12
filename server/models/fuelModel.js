@@ -1,6 +1,6 @@
 const pool = require("../config/db");
 
-async function getFuelRecords() {
+async function getFuelRecords(limit = 10, offset = 0) {
   const [rows] = await pool.query(
     `SELECT f.*,
             t.truck_no,
@@ -8,9 +8,12 @@ async function getFuelRecords() {
      FROM fuel_details f
      LEFT JOIN truck_details t ON f.truck_id = t.truck_id
      LEFT JOIN driver_details d ON f.driver_id = d.driver_id
-     ORDER BY f.fuel_date DESC`
+     ORDER BY f.fuel_date DESC
+     LIMIT ? OFFSET ?`,
+    [limit, offset]
   );
-  return rows;
+  const [[{ count }]] = await pool.query("SELECT COUNT(*) AS count FROM fuel_details");
+  return { data: rows, totalRecords: count };
 }
 
 async function createFuelRecord(truckId, driverId, liters, price, fuelDate) {

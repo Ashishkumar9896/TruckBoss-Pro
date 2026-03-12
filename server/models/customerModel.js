@@ -35,12 +35,12 @@ async function getRevenueChart() {
 }
 
 async function getCustomers() {
-  const [rows] = await pool.query("SELECT * FROM customers ORDER BY created_at DESC");
+  const [rows] = await pool.query("SELECT * FROM customers WHERE is_active = TRUE ORDER BY created_at DESC");
   return rows;
 }
 
 async function getCustomerById(id) {
-  const [rows] = await pool.query("SELECT * FROM customers WHERE customer_id = ?", [id]);
+  const [rows] = await pool.query("SELECT * FROM customers WHERE customer_id = ? AND is_active = TRUE", [id]);
   return rows;
 }
 
@@ -61,7 +61,7 @@ async function updateCustomer(id, name, phoneNo, address, amountPaid, balance) {
 }
 
 async function deleteCustomer(id) {
-  const [result] = await pool.query("DELETE FROM customers WHERE customer_id = ?", [id]);
+  const [result] = await pool.query("UPDATE customers SET is_active = FALSE WHERE customer_id = ?", [id]);
   return result;
 }
 

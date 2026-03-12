@@ -119,6 +119,7 @@
         <div class="title" id="pageTitle">Dashboard</div>
       </div>
       <div class="user-info">
+        <button id="themeToggleBtn" onclick="toggleTheme()" class="btn-icon" title="Toggle Theme" style="border:none; background:transparent;"><i class="fa-solid fa-moon" id="themeIcon" style="font-size: 1.25rem;"></i></button>
         <div class="notifications"><i class="fa-regular fa-bell"></i><span class="notif-badge" id="alertBadge">0</span></div>
         <div class="user">
           <img src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff" alt="Avatar" class="avatar" id="userAvatar">
@@ -144,6 +145,15 @@
           <div class="chart-container"><h4>Monthly Revenue</h4><div class="canvas-wrap"><canvas id="revenueChart"></canvas></div></div>
           <div class="chart-container"><h4>Fuel Expenses Trend</h4><div class="canvas-wrap"><canvas id="fuelTrendChart"></canvas></div></div>
         </section>
+        <section class="tables">
+          <div class="table-header"><h3>Maintenance Forecast</h3></div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead><tr><th>Truck</th><th>Last Serviced</th><th>Trips Since</th><th>Status</th></tr></thead>
+              <tbody id="forecastTableBody"></tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
       <!-- ===== TRUCKS VIEW ===== -->
@@ -151,7 +161,7 @@
         <section class="tables">
           <div class="table-header">
             <h3>Fleet Directory</h3>
-            <button class="btn-primary" onclick="toggleForm('truckForm')"><i class="fa-solid fa-plus"></i> Add Truck</button>
+            <button class="btn-primary" onclick="resetTruckForm(); document.getElementById('truckForm').style.display='block';"><i class="fa-solid fa-plus"></i> Add Truck</button>
           </div>
           <!-- Add/Edit Truck Form -->
           <div id="truckForm" class="form-panel" style="display:none">
@@ -185,7 +195,7 @@
         <section class="tables">
           <div class="table-header">
             <h3>Drivers</h3>
-            <button class="btn-primary" onclick="toggleForm('driverForm')"><i class="fa-solid fa-plus"></i> Add Driver</button>
+            <button class="btn-primary" onclick="resetDriverForm(); document.getElementById('driverForm').style.display='block';"><i class="fa-solid fa-plus"></i> Add Driver</button>
           </div>
           <!-- Add/Edit Driver Form -->
           <div id="driverForm" class="form-panel" style="display:none">
@@ -218,7 +228,7 @@
         <section class="tables">
           <div class="table-header">
             <h3>Customers</h3>
-            <button class="btn-primary" onclick="toggleForm('customerForm')"><i class="fa-solid fa-plus"></i> Add Customer</button>
+            <button class="btn-primary" onclick="resetCustomerForm(); document.getElementById('customerForm').style.display='block';"><i class="fa-solid fa-plus"></i> Add Customer</button>
           </div>
           <div id="customerForm" class="form-panel" style="display:none">
             <form onsubmit="submitCustomer(event)">
@@ -250,7 +260,7 @@
         <section class="tables">
           <div class="table-header">
             <h3>Trips</h3>
-            <button class="btn-primary" onclick="toggleForm('tripForm')"><i class="fa-solid fa-plus"></i> Add Trip</button>
+            <button class="btn-primary" onclick="resetTripForm(); document.getElementById('tripForm').style.display='block';"><i class="fa-solid fa-plus"></i> Add Trip</button>
           </div>
           <div id="tripForm" class="form-panel" style="display:none">
             <form onsubmit="submitTrip(event)">
@@ -261,7 +271,9 @@
                 <div class="form-group"><label>Truck</label><select id="trpTruck"><option value="">-- None --</option></select></div>
                 <div class="form-group"><label>Driver</label><select id="trpDriver"><option value="">-- None --</option></select></div>
                 <div class="form-group"><label>Customer</label><select id="trpCustomer"><option value="">-- None --</option></select></div>
-                <div class="form-group"><label>Amount (₹)</label><input type="number" id="trpAmount" value="0" min="0"></div>
+                <div class="form-group"><label>Freight Amount (₹)</label><input type="number" id="trpAmount" value="0" min="0"></div>
+                <div class="form-group"><label>Toll Expenses (₹)</label><input type="number" id="trpToll" value="0" min="0"></div>
+                <div class="form-group"><label>Misc Expenses (₹)</label><input type="number" id="trpMisc" value="0" min="0"></div>
                 <div class="form-group"><label>Status</label>
                   <select id="trpStatus"><option value="pending">Pending</option><option value="ongoing">Ongoing</option><option value="completed">Completed</option></select>
                 </div>
@@ -288,7 +300,7 @@
           </div>
           <div class="table-responsive">
             <table class="data-table" id="tripsTable">
-              <thead><tr><th>#</th><th>Route</th><th>Truck</th><th>Driver</th><th>Customer</th><th>Date</th><th>Status</th><th>Amount</th><th>Actions</th></tr></thead>
+              <thead><tr><th>#</th><th>Route</th><th>Truck</th><th>Driver</th><th>Customer</th><th>Date</th><th>Status</th><th>Net Profit</th><th>Actions</th></tr></thead>
               <tbody id="tripsTableBody"></tbody>
             </table>
           </div>
@@ -307,7 +319,7 @@
         <section class="tables">
           <div class="table-header">
             <h3>Fuel Records</h3>
-            <button class="btn-primary" onclick="toggleForm('fuelForm')"><i class="fa-solid fa-plus"></i> Add Fuel</button>
+            <button class="btn-primary" onclick="resetFuelForm(); document.getElementById('fuelForm').style.display='block';"><i class="fa-solid fa-plus"></i> Add Fuel</button>
           </div>
           <div id="fuelForm" class="form-panel" style="display:none">
             <form onsubmit="submitFuel(event)">
@@ -329,6 +341,13 @@
               <thead><tr><th>#</th><th>Truck</th><th>Driver</th><th>Liters</th><th>Price (₹)</th><th>Date</th><th>Actions</th></tr></thead>
               <tbody id="fuelTableBody"></tbody>
             </table>
+          </div>
+          <div class="pagination">
+            <span class="page-info" id="fuelPageInfo">Page 1 of 1</span>
+            <div class="page-buttons">
+              <button class="btn-secondary" id="fuelPrevBtn" onclick="changeFuelPage(-1)">Previous</button>
+              <button class="btn-secondary" id="fuelNextBtn" onclick="changeFuelPage(1)">Next</button>
+            </div>
           </div>
         </section>
       </div>
@@ -352,7 +371,7 @@
           <div class="table-header"><h3>Driver Performance Dashboard</h3></div>
           <div class="table-responsive">
             <table class="data-table">
-              <thead><tr><th>#</th><th>Driver Name</th><th>Total Trips</th><th>Total Fuel (L)</th><th>Revenue Generated (₹)</th></tr></thead>
+              <thead><tr><th>Rank</th><th>Driver Name</th><th>Total Trips</th><th>Total Fuel (L)</th><th>Revenue Generated (₹)</th><th>Score</th></tr></thead>
               <tbody id="performanceTableBody"></tbody>
             </table>
           </div>
@@ -364,7 +383,7 @@
         <section class="tables">
           <div class="table-header">
             <h3>Truck Maintenance Log</h3>
-            <button class="btn-primary" onclick="toggleForm('maintenanceForm')"><i class="fa-solid fa-plus"></i> Add Record</button>
+            <button class="btn-primary" onclick="resetMaintenanceForm(); document.getElementById('maintenanceForm').style.display='block';"><i class="fa-solid fa-plus"></i> Add Record</button>
           </div>
           <div id="maintenanceForm" class="form-panel" style="display:none">
             <form onsubmit="submitMaintenance(event)">
@@ -386,6 +405,13 @@
               <thead><tr><th>#</th><th>Truck</th><th>Service Date</th><th>Cost (₹)</th><th>Description</th><th>Actions</th></tr></thead>
               <tbody id="maintenanceTableBody"></tbody>
             </table>
+          </div>
+          <div class="pagination">
+            <span class="page-info" id="mtnPageInfo">Page 1 of 1</span>
+            <div class="page-buttons">
+              <button class="btn-secondary" id="mtnPrevBtn" onclick="changeMaintenancePage(-1)">Previous</button>
+              <button class="btn-secondary" id="mtnNextBtn" onclick="changeMaintenancePage(1)">Next</button>
+            </div>
           </div>
         </section>
       </div>

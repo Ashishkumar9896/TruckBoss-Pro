@@ -47,6 +47,8 @@ async function addTrip(req, res, next) {
       amount = 0,
       status = "pending",
       trip_date,
+      toll_amount = 0,
+      misc_expenses = 0
     } = req.body;
 
     if (!from_city || !to_city || !trip_date) {
@@ -61,7 +63,9 @@ async function addTrip(req, res, next) {
       customer_id || null,
       amount,
       status,
-      trip_date
+      trip_date,
+      toll_amount,
+      misc_expenses
     );
 
     await recalculateCustomerBalanceForTrip(customer_id);
@@ -89,7 +93,7 @@ async function addTrip(req, res, next) {
 
 async function editTrip(req, res, next) {
   try {
-    const { from_city, to_city, truck_id, driver_id, customer_id, amount, status, trip_date } = req.body;
+    const { from_city, to_city, truck_id, driver_id, customer_id, amount, status, trip_date, toll_amount = 0, misc_expenses = 0 } = req.body;
 
     const existingRows = await getTripCustomerById(req.params.id);
     if (existingRows.length === 0) {
@@ -107,7 +111,9 @@ async function editTrip(req, res, next) {
       customer_id || null,
       amount,
       status,
-      trip_date
+      trip_date,
+      toll_amount,
+      misc_expenses
     );
 
     if (result.affectedRows === 0) {

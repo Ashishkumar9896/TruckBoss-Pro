@@ -28,6 +28,18 @@ const server = http.createServer(app);
 const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 initSocket(server);
 
+const cron = require("node-cron");
+const backupDatabase = require("./server/scripts/backup");
+
+// Schedule database backup every day at 02:00 AM
+cron.schedule("0 2 * * *", async () => {
+  try {
+    await backupDatabase();
+  } catch (err) {
+    console.error("[Cron Error] Database backup failed", err);
+  }
+});
+
 // The current frontend uses CDN scripts and inline handlers; disable CSP for compatibility.
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(
@@ -71,6 +83,8 @@ app.use("/api", apiLimiter);
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);
 
+const analyticsRoutes = require("./server/routes/analyticsRoutes");
+
 app.use("/api/auth", authRoutes);
 app.use("/api", authenticateToken, truckRoutes);
 app.use("/api", authenticateToken, driverRoutes);
@@ -80,6 +94,7 @@ app.use("/api", authenticateToken, fuelRoutes);
 app.use("/api", authenticateToken, reportRoutes);
 app.use("/api", authenticateToken, dashboardRoutes);
 app.use("/api", authenticateToken, maintenanceRoutes);
+app.use("/api", authenticateToken, analyticsRoutes);
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));

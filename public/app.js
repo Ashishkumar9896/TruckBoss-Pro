@@ -3,13 +3,38 @@ const API = "";
 const appState = {
   socket: null,
   currentUser: null,
-  trips: { page: 1, limit: 10, totalPages: 1, rows: [] }
+  trips: { page: 1, limit: 10, totalPages: 1, rows: [] },
+  fuel: { page: 1, limit: 10, totalPages: 1 },
+  maintenance: { page: 1, limit: 10, totalPages: 1 }
 };
 
 /* ── Modals ── */
 function openModal(id) { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function switchModal(from, to) { closeModal(from); openModal(to); }
+
+/* ── Theme Toggle ── */
+function applyTheme(theme) {
+  const icon = document.getElementById('themeIcon');
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    if (icon) icon.className = 'fa-solid fa-sun';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    if (icon) icon.className = 'fa-solid fa-moon';
+  }
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const newTheme = current === 'light' ? 'dark' : 'light';
+  localStorage.setItem('tbTheme', newTheme);
+  applyTheme(newTheme);
+}
+(function() {
+  const savedTheme = localStorage.getItem('tbTheme');
+  if (savedTheme) applyTheme(savedTheme);
+})();
+
 
 /* ── Toast ── */
 function showToast(msg, type = 'info') {
@@ -141,7 +166,12 @@ async function loadDashboard() {
   const c = document.getElementById('view-dashboard');
   showLoading(c, 'Loading dashboard metrics...');
   try {
-    const [m, a, trucks] = await Promise.all([api('/api/dashboard/metrics'), api('/api/dashboard/analytics'), api('/api/trucks')]);
+    const [m, a, trucks, forecast] = await Promise.all([
+      api('/api/dashboard/metrics'), 
+      api('/api/dashboard/analytics'), 
+      api('/api/trucks'),
+      api('/api/dashboard/maintenance-forecast')
+    ]);
     document.getElementById('totalTrucks').textContent = m.totalTrucks || 0;
     document.getElementById('activeTrucksVal').textContent = m.activeTrucks || 0;
     document.getElementById('monthlyRevenueVal').textContent = fmtCurrency(m.monthlyRevenue);
@@ -149,15 +179,45 @@ async function loadDashboard() {
     document.getElementById('profitVal').textContent = fmtCurrency(m.profit);
     renderCharts(a.monthlyRevenue || [], a.monthlyFuelCost || []);
     
-    // Maintenance Alerts
+    // Maintenance Alerts & Forecast
     const alertsBox = document.getElementById('dashboardAlerts');
+    let alertHtml = '';
+    
+    // Traditional Date-based Due Alerts
     const dueTrucks = trucks.filter(t => t.maintenance && t.maintenance.toLowerCase() !== 'not required' && t.maintenance.toLowerCase() !== 'none' && t.maintenance.toLowerCase() !== '');
     if (dueTrucks.length > 0) {
-      alertsBox.innerHTML = dueTrucks.map(t => `<div class="alert-warning"><i class="fa-solid fa-triangle-exclamation"></i> Truck <strong>${esc(t.truck_no)}</strong> service due! (${esc(t.maintenance)})</div>`).join('');
+      alertHtml += dueTrucks.map(t => `<div class="alert-warning"><i class="fa-solid fa-triangle-exclamation"></i> Truck <strong>${esc(t.truck_no)}</strong> marked for manual service: ${esc(t.maintenance)}</div>`).join('');
+    }
+    
+    // Usage-based Forecast Alerts (e.g. threshold = 15 trips)
+    const thresholdTrips = 15;
+    const dueSoon = forecast.filter(f => f.trips_since_service >= thresholdTrips);
+    if (dueSoon.length > 0) {
+      alertHtml += dueSoon.map(f => `<div class="alert-warning" style="color:var(--danger); border-color:var(--danger); background:rgba(239,68,68,0.1);"><i class="fa-solid fa-wrench"></i> Truck <strong>${esc(f.truck_no)}</strong> requires maintenance! (${f.trips_since_service} trips since last service)</div>`).join('');
+    }
+
+    if (alertHtml) {
+      alertsBox.innerHTML = alertHtml;
       alertsBox.style.display = 'block';
     } else {
       alertsBox.style.display = 'none';
       alertsBox.innerHTML = '';
+    }
+    
+    // Render Maintenance Forecast Widget
+    const forecastTbody = document.getElementById('forecastTableBody');
+    if (forecastTbody) {
+      forecastTbody.innerHTML = forecast.map(f => {
+        let badgeClass = 'status-available'; // green
+        if (f.trips_since_service >= 15) badgeClass = 'status-inactive'; // red/warning
+        else if (f.trips_since_service >= 10) badgeClass = 'status-pending'; // yellow
+        return `<tr>
+          <td><strong>${esc(f.truck_no)}</strong></td>
+          <td>${f.last_service === 'No Record' ? 'Never' : fmtDate(f.last_service)}</td>
+          <td>${f.trips_since_service}</td>
+          <td><span class="status-badge ${badgeClass}">${f.trips_since_service}/15 Limit</span></td>
+        </tr>`;
+      }).join('');
     }
   } catch (err) { showError(c, 'Failed to load dashboard'); } finally { hideLoading(c); }
 }
@@ -389,26 +449,29 @@ async function fetchTrips() {
   for (const [k, v] of Object.entries(f)) if (v) params.set(k, v);
   try {
     const [res, trucks, drivers, customers] = await Promise.all([
-      api('/api/trips?' + params.toString()),
+      api('/api/analytics/trip-profitability?' + params.toString()),
       api('/api/trucks'), api('/api/drivers'), api('/api/customers')
     ]);
     setSelectOpts('trpTruck', trucks.map(t => ({ value: t.truck_id, label: t.truck_no })));
     setSelectOpts('trpDriver', drivers.map(d => ({ value: d.driver_id, label: d.name })));
     setSelectOpts('trpCustomer', customers.map(c => ({ value: c.customer_id, label: c.name })));
     appState.trips.rows = res.data || [];
-    appState.trips.totalPages = Math.max(Math.ceil(res.totalTrips / appState.trips.limit), 1);
-    document.getElementById('tripPageInfo').textContent = `Page ${appState.trips.page} of ${appState.trips.totalPages} • ${res.totalTrips || 0} trips`;
+    appState.trips.totalPages = Math.max(res.totalPages, 1);
+    document.getElementById('tripPageInfo').textContent = `Page ${appState.trips.page} of ${appState.trips.totalPages} • ${res.totalRecords || 0} trips`;
     document.getElementById('tripPrevBtn').disabled = appState.trips.page <= 1;
     document.getElementById('tripNextBtn').disabled = appState.trips.page >= appState.trips.totalPages;
     if (!appState.trips.rows.length) { tbody.innerHTML = emptyRow(9, 'No trips found'); return; }
     const offset = (appState.trips.page - 1) * appState.trips.limit;
     tbody.innerHTML = appState.trips.rows.map((t, i) => `<tr>
       <td>${offset + i + 1}</td>
-      <td><strong>${esc(t.from_city)}</strong> → <strong>${esc(t.to_city)}</strong></td>
-      <td>${esc(t.truck_no || '—')}</td><td>${esc(t.driver_name || '—')}</td><td>${esc(t.customer_name || '—')}</td>
+      <td><strong>${esc(t.from_city)}</strong> → <strong>${esc(t.to_city)}</strong> <br><small class="text-muted">Trip #${t.trip_id}</small></td>
+      <td>${esc(t.truck_no || '—')}</td><td>${esc(t.driver_name || '—')}</td><td>—</td>
       <td>${fmtDate(t.trip_date)}</td>
-      <td><span class="status-badge status-${(t.status||'').toLowerCase()}">${esc(t.status)}</span></td>
-      <td>${fmtCurrency(t.amount)}</td>
+      <td><span class="status-badge status-completed">Evaluated</span></td>
+      <td>
+        <strong style="color:${t.net_profit >= 0 ? 'var(--success)' : 'var(--danger)'}">${fmtCurrency(t.net_profit)}</strong><br>
+        <small style="color:var(--text-muted)">Rev: ${fmtCurrency(t.revenue)} | Exp: ${fmtCurrency(t.expenses.total)}</small>
+      </td>
       <td class="actions-cell">
         <button class="btn-icon" onclick="editTrip(${t.trip_id})"><i class="fa-solid fa-pen"></i></button>
         <button class="btn-icon btn-icon-danger" onclick="deleteTrip(${t.trip_id})"><i class="fa-solid fa-trash"></i></button>
@@ -419,7 +482,18 @@ async function fetchTrips() {
 async function submitTrip(e) {
   e.preventDefault();
   const id = document.getElementById('trpId').value;
-  const body = { from_city: document.getElementById('trpFrom').value, to_city: document.getElementById('trpTo').value, truck_id: document.getElementById('trpTruck').value || null, driver_id: document.getElementById('trpDriver').value || null, customer_id: document.getElementById('trpCustomer').value || null, amount: document.getElementById('trpAmount').value, status: document.getElementById('trpStatus').value, trip_date: document.getElementById('trpDate').value };
+  const body = { 
+    from_city: document.getElementById('trpFrom').value, 
+    to_city: document.getElementById('trpTo').value, 
+    truck_id: document.getElementById('trpTruck').value || null, 
+    driver_id: document.getElementById('trpDriver').value || null, 
+    customer_id: document.getElementById('trpCustomer').value || null, 
+    amount: document.getElementById('trpAmount').value, 
+    toll_amount: document.getElementById('trpToll').value,
+    misc_expenses: document.getElementById('trpMisc').value,
+    status: document.getElementById('trpStatus').value, 
+    trip_date: document.getElementById('trpDate').value 
+  };
   try {
     if (id) { await api(`/api/trips/${id}`, { method: 'PUT', body: JSON.stringify(body) }); showToast('Trip updated', 'success'); }
     else { await api('/api/trips', { method: 'POST', body: JSON.stringify(body) }); showToast('Trip added', 'success'); }
@@ -431,13 +505,15 @@ function editTrip(id) {
   const t = appState.trips.rows.find(r => r.trip_id === id);
   if (!t) { showToast('Trip not found on this page', 'info'); return; }
   document.getElementById('trpId').value = t.trip_id;
-  document.getElementById('trpFrom').value = t.from_city;
-  document.getElementById('trpTo').value = t.to_city;
+  document.getElementById('trpFrom').value = t.from_city || '';
+  document.getElementById('trpTo').value = t.to_city || '';
   document.getElementById('trpTruck').value = t.truck_id || '';
   document.getElementById('trpDriver').value = t.driver_id || '';
   document.getElementById('trpCustomer').value = t.customer_id || '';
-  document.getElementById('trpAmount').value = t.amount;
-  document.getElementById('trpStatus').value = t.status;
+  document.getElementById('trpAmount').value = t.revenue || 0;
+  document.getElementById('trpToll').value = t.expenses ? t.expenses.tolls : 0;
+  document.getElementById('trpMisc').value = t.expenses ? t.expenses.misc : 0;
+  document.getElementById('trpStatus').value = 'completed';
   document.getElementById('trpDate').value = t.trip_date ? t.trip_date.split('T')[0] : '';
   document.getElementById('tripForm').style.display = 'block';
   document.getElementById('tripForm').scrollIntoView({ behavior: 'smooth' });
@@ -450,6 +526,8 @@ async function deleteTrip(id) {
 
 function resetTripForm() {
   ['trpId', 'trpFrom', 'trpTo', 'trpAmount', 'trpDate'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('trpToll').value = '0';
+  document.getElementById('trpMisc').value = '0';
   document.getElementById('trpTruck').value = '';
   document.getElementById('trpDriver').value = '';
   document.getElementById('trpCustomer').value = '';
@@ -459,18 +537,35 @@ function resetTripForm() {
 /* ══════════════════════════════════════════
    FUEL CRUD
    ══════════════════════════════════════════ */
+function changeFuelPage(dir) {
+  const np = appState.fuel.page + dir;
+  if (np >= 1 && np <= appState.fuel.totalPages) { appState.fuel.page = np; loadFuel(); }
+}
+
 async function loadFuel() {
   switchView('fuel');
   const tbody = document.getElementById('fuelTableBody');
   const tc = tbody.closest('.table-responsive');
   showLoading(tc, 'Loading fuel records...');
   try {
-    const [rows, trucks, drivers] = await Promise.all([api('/api/fuel'), api('/api/trucks'), api('/api/drivers')]);
+    const params = new URLSearchParams();
+    params.set('page', appState.fuel.page);
+    params.set('limit', appState.fuel.limit);
+    const [res, trucks, drivers] = await Promise.all([api('/api/fuel?' + params.toString()), api('/api/trucks'), api('/api/drivers')]);
+    
+    appState.fuel.totalPages = Math.max(Math.ceil(res.totalRecords / appState.fuel.limit), 1);
+    document.getElementById('fuelPageInfo').textContent = `Page ${appState.fuel.page} of ${appState.fuel.totalPages} • ${res.totalRecords || 0} records`;
+    document.getElementById('fuelPrevBtn').disabled = appState.fuel.page <= 1;
+    document.getElementById('fuelNextBtn').disabled = appState.fuel.page >= appState.fuel.totalPages;
+
+    const rows = res.data || [];
     setSelectOpts('fuelTruck', trucks.map(t => ({ value: t.truck_id, label: t.truck_no })));
     setSelectOpts('fuelDriver', drivers.map(d => ({ value: d.driver_id, label: d.name })));
     if (!rows.length) { tbody.innerHTML = emptyRow(7, 'No fuel records yet'); return; }
+    
+    const offset = (appState.fuel.page - 1) * appState.fuel.limit;
     tbody.innerHTML = rows.map((f, i) => `<tr>
-      <td>${i + 1}</td><td>${esc(f.truck_no || '—')}</td><td>${esc(f.driver_name || '—')}</td>
+      <td>${offset + i + 1}</td><td>${esc(f.truck_no || '—')}</td><td>${esc(f.driver_name || '—')}</td>
       <td>${Number(f.liters).toLocaleString('en-IN')} L</td><td>${fmtCurrency(f.price)}</td><td>${fmtDate(f.fuel_date)}</td>
       <td class="actions-cell"><button class="btn-icon btn-icon-danger" onclick="deleteFuel(${f.fuel_id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`).join('');
@@ -500,10 +595,20 @@ function resetFuelForm() {
 
 /* ── Reports ── */
 function loadReports() { switchView('reports'); }
-function exportTripsPDF() { window.location.href = '/api/reports/trips/pdf'; }
-function exportTripsExcel() { window.location.href = '/api/reports/trips/excel'; }
-function exportFuelExcel() { window.location.href = '/api/reports/fuel/excel'; }
-function exportRevenuePDF() { window.location.href = '/api/reports/revenue/pdf'; }
+async function downloadReport(path, filename) {
+  try {
+    const tk = localStorage.getItem('tbToken');
+    const r = await fetch(API + path, { headers: { Authorization: `Bearer ${tk}` } });
+    if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Download failed'); }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  } catch (err) { showToast(err.message, 'error'); }
+}
+function exportTripsPDF() { downloadReport(`/api/reports/trips/pdf?t=${Date.now()}`, 'trips-report.pdf'); }
+function exportTripsExcel() { downloadReport(`/api/reports/trips/excel?t=${Date.now()}`, 'trips-report.xlsx'); }
+function exportFuelExcel() { downloadReport(`/api/reports/fuel/excel?t=${Date.now()}`, 'fuel-report.xlsx'); }
+function exportRevenuePDF() { downloadReport(`/api/reports/revenue/pdf?t=${Date.now()}`, 'revenue-report.pdf'); }
 
 /* ══════════════════════════════════════════
    ADVANCED MODULES (Performance, Maintenance, Efficiency)
@@ -517,27 +622,54 @@ async function loadPerformance() {
   showLoading(tc, 'Loading performance data...');
   try {
     const rows = await api('/api/drivers/performance');
-    if (!rows.length) { tbody.innerHTML = emptyRow(5, 'No performance data yet'); return; }
-    tbody.innerHTML = rows.map((r, i) => `<tr>
-      <td>${i + 1}</td><td>${esc(r.name)}</td><td>${r.total_trips}</td>
+    if (!rows.length) { tbody.innerHTML = emptyRow(6, 'No performance data yet'); return; }
+    tbody.innerHTML = rows.map((r, i) => {
+      let medal = '';
+      if (i === 0) medal = '<i class="fa-solid fa-medal" style="color:#fbbf24; font-size:1.2rem;"></i>';
+      else if (i === 1) medal = '<i class="fa-solid fa-medal" style="color:#9ca3af; font-size:1.2rem;"></i>';
+      else if (i === 2) medal = '<i class="fa-solid fa-medal" style="color:#b45309; font-size:1.2rem;"></i>';
+      
+      return `<tr>
+      <td>${medal || i + 1}</td>
+      <td><strong>${esc(r.name)}</strong></td>
+      <td>${r.total_trips}</td>
       <td>${Number(r.total_fuel).toLocaleString('en-IN')} L</td>
       <td>${fmtCurrency(r.revenue)}</td>
-    </tr>`).join('');
-  } catch (err) { tbody.innerHTML = errorRow(5); } finally { hideLoading(tc); }
+      <td><span class="status-badge" style="background:var(--primary); color:white;">${Number(r.score).toLocaleString('en-IN')}</span></td>
+    </tr>`;
+    }).join('');
+  } catch (err) { tbody.innerHTML = errorRow(6); } finally { hideLoading(tc); }
 }
 
 /* Truck Maintenance */
+function changeMaintenancePage(dir) {
+  const np = appState.maintenance.page + dir;
+  if (np >= 1 && np <= appState.maintenance.totalPages) { appState.maintenance.page = np; loadMaintenance(); }
+}
+
 async function loadMaintenance() {
   switchView('maintenance');
   const tbody = document.getElementById('maintenanceTableBody');
   const tc = tbody.closest('.table-responsive');
   showLoading(tc, 'Loading maintenance logs...');
   try {
-    const [rows, trucks] = await Promise.all([api('/api/maintenance'), api('/api/trucks')]);
+    const params = new URLSearchParams();
+    params.set('page', appState.maintenance.page);
+    params.set('limit', appState.maintenance.limit);
+    const [res, trucks] = await Promise.all([api('/api/maintenance?' + params.toString()), api('/api/trucks')]);
+    
+    appState.maintenance.totalPages = Math.max(Math.ceil(res.totalRecords / appState.maintenance.limit), 1);
+    document.getElementById('mtnPageInfo').textContent = `Page ${appState.maintenance.page} of ${appState.maintenance.totalPages} • ${res.totalRecords || 0} records`;
+    document.getElementById('mtnPrevBtn').disabled = appState.maintenance.page <= 1;
+    document.getElementById('mtnNextBtn').disabled = appState.maintenance.page >= appState.maintenance.totalPages;
+
+    const rows = res.data || [];
     setSelectOpts('mtnTruck', trucks.map(t => ({ value: t.truck_id, label: t.truck_no })));
     if (!rows.length) { tbody.innerHTML = emptyRow(6, 'No maintenance records yet'); return; }
+    
+    const offset = (appState.maintenance.page - 1) * appState.maintenance.limit;
     tbody.innerHTML = rows.map((m, i) => `<tr>
-      <td>${i + 1}</td><td>${esc(m.truck_no || '—')}</td><td>${fmtDate(m.service_date)}</td>
+      <td>${offset + i + 1}</td><td>${esc(m.truck_no || '—')}</td><td>${fmtDate(m.service_date)}</td>
       <td>${fmtCurrency(m.cost)}</td><td>${esc(m.description || '—')}</td>
       <td class="actions-cell">
         <button class="btn-icon btn-icon-danger" onclick="deleteMaintenance(${m.maintenance_id})"><i class="fa-solid fa-trash"></i></button>

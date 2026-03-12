@@ -175,10 +175,40 @@ async function getFuelEfficiency(req, res, next) {
   }
 }
 
+async function getMaintenanceForecast(req, res, next) {
+  try {
+    const [forecasts] = await pool.query(
+      `SELECT t.truck_id, t.truck_no,
+              IFNULL(m.last_service_date, 'No Record') AS last_service,
+              COUNT(tr.trip_id) AS trips_since_service
+       FROM truck_details t
+       LEFT JOIN (
+           SELECT truck_id, MAX(service_date) as last_service_date
+           FROM maintenance_records
+           GROUP BY truck_id
+       ) m ON t.truck_id = m.truck_id
+       LEFT JOIN trips tr ON t.truck_id = tr.truck_id AND (m.last_service_date IS NULL OR tr.trip_date > m.last_service_date)
+       WHERE t.is_active = TRUE
+       GROUP BY t.truck_id, t.truck_no, m.last_service_date
+       ORDER BY trips_since_service DESC`
+    );
+
+    return res.json(forecasts.map(f => ({
+      truck_id: f.truck_id,
+      truck_no: f.truck_no,
+      last_service: f.last_service,
+      trips_since_service: Number(f.trips_since_service)
+    })));
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   getStats,
   getRevenueChartData,
   getDashboardMetrics,
   getDashboardAnalytics,
   getFuelEfficiency,
+  getMaintenanceForecast
 };

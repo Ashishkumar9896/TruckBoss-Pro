@@ -59,10 +59,10 @@ async function getTripsCount(filters) {
   return result.totalTrips;
 }
 
-async function createTrip(fromCity, toCity, truckId, driverId, customerId, amount, status, tripDate) {
+async function createTrip(fromCity, toCity, truckId, driverId, customerId, amount, status, tripDate, tollAmount = 0, miscExpenses = 0) {
   const [result] = await pool.query(
-    "INSERT INTO trips (from_city, to_city, truck_id, driver_id, customer_id, amount, status, trip_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    [fromCity, toCity, truckId, driverId, customerId, amount, status, tripDate]
+    "INSERT INTO trips (from_city, to_city, truck_id, driver_id, customer_id, amount, status, trip_date, toll_amount, misc_expenses) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [fromCity, toCity, truckId, driverId, customerId, amount, status, tripDate, tollAmount, miscExpenses]
   );
   return result;
 }
@@ -72,10 +72,10 @@ async function getTripCustomerById(tripId) {
   return rows;
 }
 
-async function updateTrip(id, fromCity, toCity, truckId, driverId, customerId, amount, status, tripDate) {
+async function updateTrip(id, fromCity, toCity, truckId, driverId, customerId, amount, status, tripDate, tollAmount = 0, miscExpenses = 0) {
   const [result] = await pool.query(
-    "UPDATE trips SET from_city=?, to_city=?, truck_id=?, driver_id=?, customer_id=?, amount=?, status=?, trip_date=? WHERE trip_id=?",
-    [fromCity, toCity, truckId, driverId, customerId, amount, status, tripDate, id]
+    "UPDATE trips SET from_city=?, to_city=?, truck_id=?, driver_id=?, customer_id=?, amount=?, status=?, trip_date=?, toll_amount=?, misc_expenses=? WHERE trip_id=?",
+    [fromCity, toCity, truckId, driverId, customerId, amount, status, tripDate, tollAmount, miscExpenses, id]
   );
   return result;
 }

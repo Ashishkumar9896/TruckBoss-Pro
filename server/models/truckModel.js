@@ -10,6 +10,7 @@ async function getTrucks() {
     `SELECT t.*, d.name AS driver_name
      FROM truck_details t
      LEFT JOIN driver_details d ON t.driver_id = d.driver_id
+     WHERE t.is_active = TRUE
      ORDER BY t.created_at DESC`
   );
   return rows;
@@ -20,7 +21,7 @@ async function getTruckById(id) {
     `SELECT t.*, d.name AS driver_name
      FROM truck_details t
      LEFT JOIN driver_details d ON t.driver_id = d.driver_id
-     WHERE t.truck_id = ?`,
+     WHERE t.truck_id = ? AND t.is_active = TRUE`,
     [id]
   );
   return rows;
@@ -43,7 +44,7 @@ async function updateTruck(id, truckNo, driverId, status, maintenance) {
 }
 
 async function deleteTruck(id) {
-  const [result] = await pool.query("DELETE FROM truck_details WHERE truck_id = ?", [id]);
+  const [result] = await pool.query("UPDATE truck_details SET is_active = FALSE WHERE truck_id = ?", [id]);
   return result;
 }
 

@@ -2,8 +2,17 @@ const maintenanceModel = require("../models/maintenanceModel");
 
 exports.getMaintenance = async (req, res, next) => {
   try {
-    const records = await maintenanceModel.getMaintenanceRecords();
-    res.json(records);
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
+    const result = await maintenanceModel.getMaintenanceRecords(limit, offset);
+    res.json({
+      page,
+      limit,
+      totalRecords: result.totalRecords,
+      data: result.data
+    });
   } catch (err) {
     next(err);
   }
