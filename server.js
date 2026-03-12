@@ -20,10 +20,14 @@ const dashboardRoutes = require("./server/routes/dashboardRoutes");
 const maintenanceRoutes = require("./server/routes/maintenanceRoutes");
 const { authenticateToken } = require("./server/middleware/authMiddleware");
 const errorHandler = require("./server/middleware/errorMiddleware");
+const compression = require("compression");
 const { initSocket } = require("./server/socket");
 
 const app = express();
 const server = http.createServer(app);
+
+// Enable Gzip compression for faster data transfer
+app.use(compression());
 
 const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 initSocket(server);
@@ -73,15 +77,19 @@ app.use(
   })
 );
 app.use(express.json({ limit: "10kb" }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public"), {
+  maxAge: '1d', // Cache static assets for 1 day for speed
+  etag: true
+}));
 app.use("/vendor/chart", express.static(path.join(__dirname, "node_modules", "chart.js", "dist")));
 
 const rateLimitWindowMs = 15 * 60 * 1000;
-const apiRateLimitMax = Number(process.env.API_RATE_LIMIT_MAX || 500);
+// Increased default rate limit to 2000 for a smoother experience
+const apiRateLimitMax = Number(process.env.API_RATE_LIMIT_MAX || 2000);
 
 const authLimiter = rateLimit({
   windowMs: rateLimitWindowMs,
-  max: 10,
+  max: 50, // Increased auth attempt limit slightly
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
