@@ -10,7 +10,7 @@ const appState = {
 
 /* ── Modals ── */
 function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function closeModal(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 function switchModal(from, to) { closeModal(from); openModal(to); }
 
 /* ── Theme Toggle ── */
@@ -33,7 +33,31 @@ function toggleTheme() {
 (function() {
   const savedTheme = localStorage.getItem('tbTheme');
   if (savedTheme) applyTheme(savedTheme);
+  // Sync landing page theme icon
+  syncLandingThemeIcon();
 })();
+
+/* ── Auth Page Card Switching ── */
+function showAuthCard(which) {
+  document.getElementById('authLoginCard').style.display = which === 'login' ? 'block' : 'none';
+  document.getElementById('authRegisterCard').style.display = which === 'register' ? 'block' : 'none';
+}
+
+/* ── Landing Theme Toggle ── */
+function toggleLandingTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const newTheme = current === 'light' ? 'dark' : 'light';
+  localStorage.setItem('tbTheme', newTheme);
+  applyTheme(newTheme);
+  syncLandingThemeIcon();
+}
+
+function syncLandingThemeIcon() {
+  const icon = document.getElementById('landingThemeIcon');
+  if (!icon) return;
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  icon.className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+}
 
 
 /* ── Toast ── */
@@ -86,7 +110,6 @@ async function handleLogin(e) {
     const d = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: document.getElementById('loginEmail').value, password: document.getElementById('loginPassword').value }) });
     localStorage.setItem('tbToken', d.token);
     localStorage.setItem('tbUser', JSON.stringify(d.user));
-    closeModal('authModal');
     enterDashboard(d.user);
   } catch (err) { showToast(err.message, 'error'); }
 }
@@ -97,7 +120,6 @@ async function handleRegister(e) {
     const d = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ full_name: document.getElementById('regName').value, email: document.getElementById('regEmail').value, password: document.getElementById('regPassword').value }) });
     localStorage.setItem('tbToken', d.token);
     localStorage.setItem('tbUser', JSON.stringify(d.user));
-    closeModal('registerModal');
     enterDashboard(d.user);
   } catch (err) { showToast(err.message, 'error'); }
 }
@@ -195,6 +217,7 @@ async function loadDashboard() {
     document.getElementById('totalRevenueVal').textContent = fmtCurrency(m.totalRevenue);
     document.getElementById('fuelExpensesVal').textContent = fmtCurrency(m.fuelExpenses);
     document.getElementById('profitVal').textContent = fmtCurrency(m.profit);
+    
     renderCharts(a.monthlyRevenue || [], a.monthlyFuelCost || []);
     
     // Maintenance Alerts & Forecast

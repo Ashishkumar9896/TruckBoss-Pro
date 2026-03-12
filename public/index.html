@@ -11,44 +11,124 @@
 </head>
 <body>
 
-<!-- Landing Page -->
-<section id="landingPage" class="landing-page">
-  <div class="landing-content">
-    <h1>TruckBoss Pro</h1>
-    <p>Modern SaaS Fleet Operations</p>
-    <div style="display: flex; gap: 1rem; justify-content: center;">
-      <button onclick="openModal('authModal')" class="btn-primary">Login</button>
-      <button onclick="openModal('registerModal')" class="btn-secondary">Create Account</button>
+<!-- Landing / Auth Page -->
+<section id="landingPage" class="auth-page">
+  <!-- Left: Branding Panel -->
+  <div class="auth-branding">
+    <div class="auth-branding-inner">
+      <div class="auth-logo"><i class="fa-solid fa-truck-fast"></i></div>
+      <h1>TruckBoss Pro</h1>
+      <p class="auth-tagline">India's Smart Fleet Command Center</p>
+      <div class="auth-features">
+        <div class="auth-feature"><i class="fa-solid fa-chart-line"></i><span>Real-time Fleet Analytics</span></div>
+        <div class="auth-feature"><i class="fa-solid fa-route"></i><span>Trip & Revenue Tracking</span></div>
+        <div class="auth-feature"><i class="fa-solid fa-gas-pump"></i><span>Fuel Cost Management</span></div>
+        <div class="auth-feature"><i class="fa-solid fa-wrench"></i><span>Maintenance Forecasting</span></div>
+      </div>
+    </div>
+    <div class="auth-branding-footer">
+      <p>&copy; 2026 TruckBoss Pro. All rights reserved.</p>
+    </div>
+  </div>
+
+  <!-- Right: Auth Forms -->
+  <div class="auth-forms-panel">
+    <div class="auth-topbar">
+      <div class="auth-topbar-links">
+        <button onclick="openModal('supportModal')" class="auth-link-btn"><i class="fa-solid fa-headset"></i> Support</button>
+        <button onclick="openModal('faqModal')" class="auth-link-btn"><i class="fa-solid fa-circle-question"></i> FAQ</button>
+      </div>
+      <button onclick="toggleLandingTheme()" class="auth-theme-btn" id="landingThemeBtn" title="Toggle theme"><i class="fa-solid fa-moon" id="landingThemeIcon"></i></button>
+    </div>
+
+    <div class="auth-form-wrapper">
+      <!-- Login Form -->
+      <div id="authLoginCard" class="auth-card">
+        <h2>Welcome back</h2>
+        <p class="auth-subtitle">Sign in to your fleet dashboard</p>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>Email</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-envelope"></i><input type="email" id="loginEmail" placeholder="you@company.com" required></div>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-lock"></i><input type="password" id="loginPassword" placeholder="Enter your password" required></div>
+          </div>
+          <button type="submit" class="btn-primary full-width auth-submit-btn"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+        </form>
+        <p class="auth-switch">Don't have an account? <a href="#" onclick="showAuthCard('register')">Create one</a></p>
+      </div>
+
+      <!-- Register Form -->
+      <div id="authRegisterCard" class="auth-card" style="display:none">
+        <h2>Get Started</h2>
+        <p class="auth-subtitle">Create your fleet management account</p>
+        <form id="registerForm" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label>Full Name</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-user"></i><input type="text" id="regName" placeholder="Your full name" required></div>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-envelope"></i><input type="email" id="regEmail" placeholder="you@company.com" required></div>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-icon-wrap"><i class="fa-solid fa-lock"></i><input type="password" id="regPassword" placeholder="Create a password" required></div>
+          </div>
+          <button type="submit" class="btn-primary full-width auth-submit-btn"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+        </form>
+        <p class="auth-switch">Already have an account? <a href="#" onclick="showAuthCard('login')">Sign In</a></p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- Auth Modal -->
-<div id="authModal" class="modal-overlay" style="display:none">
+<!-- Support Modal (shared by landing & app) -->
+<div id="supportModal" class="modal-overlay" style="display:none">
   <div class="modal-box">
-    <button class="close-btn" onclick="closeModal('authModal')">&times;</button>
-    <h2>Login</h2>
-    <form id="loginForm" onsubmit="handleLogin(event)">
-      <div class="form-group"><label>Email</label><input type="email" id="loginEmail" required></div>
-      <div class="form-group"><label>Password</label><input type="password" id="loginPassword" required></div>
-      <button type="submit" class="btn-primary full-width">Sign In</button>
-      <p style="text-align:center; margin-top:1rem; font-size:0.875rem; color:var(--text-muted)">Need an account? <a href="#" onclick="switchModal('authModal','registerModal')" style="color:var(--primary);text-decoration:none;">Register</a></p>
-    </form>
+    <button class="close-btn" onclick="closeModal('supportModal')">&times;</button>
+    <h2>Technical Support</h2>
+    <div class="support-content">
+      <p>Need help? Our team is available 24/7 for fleet emergencies.</p>
+      <div class="contact-card">
+        <i class="fa-solid fa-envelope"></i>
+        <div>
+          <strong>Email Us</strong>
+          <p>support@truckbosspro.com</p>
+        </div>
+      </div>
+      <div class="contact-card">
+        <i class="fa-solid fa-phone"></i>
+        <div>
+          <strong>WhatsApp Support</strong>
+          <p>+91 98765 43210</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Register Modal -->
-<div id="registerModal" class="modal-overlay" style="display:none">
-  <div class="modal-box">
-    <button class="close-btn" onclick="closeModal('registerModal')">&times;</button>
-    <h2>Create Account</h2>
-    <form id="registerForm" onsubmit="handleRegister(event)">
-      <div class="form-group"><label>Full Name</label><input type="text" id="regName" required></div>
-      <div class="form-group"><label>Email</label><input type="email" id="regEmail" required></div>
-      <div class="form-group"><label>Password</label><input type="password" id="regPassword" required></div>
-      <button type="submit" class="btn-primary full-width">Sign Up</button>
-      <p style="text-align:center; margin-top:1rem; font-size:0.875rem; color:var(--text-muted)">Already registered? <a href="#" onclick="switchModal('registerModal','authModal')" style="color:var(--primary);text-decoration:none;">Login</a></p>
-    </form>
+<!-- FAQ Modal (shared by landing & app) -->
+<div id="faqModal" class="modal-overlay" style="display:none">
+  <div class="modal-box modal-large">
+    <button class="close-btn" onclick="closeModal('faqModal')">&times;</button>
+    <h2>Frequently Asked Questions</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <strong>How do I add a new truck?</strong>
+        <p>Go to the 'Trucks' tab and click the 'Add Truck' button in the top right corner.</p>
+      </div>
+      <div class="faq-item">
+        <strong>How is profit calculated?</strong>
+        <p>Profit = (Total Amount) - (Fuel Cost + Tolls + Misc Expenses).</p>
+      </div>
+      <div class="faq-item">
+        <strong>What is the Maintenance Forecast?</strong>
+        <p>It predicts service needs based on the number of trips completed since the last maintenance record.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -138,53 +218,6 @@
         </div>
       </div>
     </header>
-
-    <!-- Support Modal -->
-    <div id="supportModal" class="modal-overlay" style="display:none">
-      <div class="modal-box">
-        <button class="close-btn" onclick="closeModal('supportModal')">&times;</button>
-        <h2>Technical Support</h2>
-        <div class="support-content">
-          <p>Need help? Our team is available 24/7 for fleet emergencies.</p>
-          <div class="contact-card">
-            <i class="fa-solid fa-envelope"></i>
-            <div>
-              <strong>Email Us</strong>
-              <p>support@truckbosspro.com</p>
-            </div>
-          </div>
-          <div class="contact-card">
-            <i class="fa-solid fa-phone"></i>
-            <div>
-              <strong>WhatsApp Support</strong>
-              <p>+91 98765 43210</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- FAQ Modal -->
-    <div id="faqModal" class="modal-overlay" style="display:none">
-      <div class="modal-box modal-large">
-        <button class="close-btn" onclick="closeModal('faqModal')">&times;</button>
-        <h2>Frequently Asked Questions</h2>
-        <div class="faq-list">
-          <div class="faq-item">
-            <strong>How do I add a new truck?</strong>
-            <p>Go to the 'Trucks' tab and click the 'Add Truck' button in the top right corner.</p>
-          </div>
-          <div class="faq-item">
-            <strong>How is profit calculated?</strong>
-            <p>Profit = (Total Amount) - (Fuel Cost + Tolls + Misc Expenses).</p>
-          </div>
-          <div class="faq-item">
-            <strong>What is the Maintenance Forecast?</strong>
-            <p>It predicts service needs based on the number of trips completed since the last maintenance record.</p>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <div id="dynamicContentWrapper">
 
