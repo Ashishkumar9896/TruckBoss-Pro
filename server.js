@@ -42,11 +42,15 @@ cron.schedule("0 2 * * *", async () => {
 
 // The current frontend uses CDN scripts and inline handlers; disable CSP for compatibility.
 app.use(helmet({ contentSecurityPolicy: false }));
+
+// Build allowed origins list from FRONTEND_ORIGIN (supports comma-separated values)
+const allowedOrigins = frontendOrigin.split(",").map((o) => o.trim());
+
 app.use(
   cors({
     origin(origin, callback) {
       // Allow same-origin/server-to-server requests with no Origin header.
-      if (!origin || origin === frontendOrigin) {
+      if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
       return callback(new Error("Not allowed by CORS"));

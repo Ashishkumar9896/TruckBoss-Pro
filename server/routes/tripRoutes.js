@@ -6,7 +6,6 @@ const {
   removeTrip,
 } = require("../controllers/tripController");
 const asyncHandler = require("../middleware/asyncHandler");
-const { authorizeRoles } = require("../middleware/roleMiddleware");
 const {
   validateTrip,
   handleValidationErrors,
@@ -14,15 +13,14 @@ const {
 
 const router = express.Router();
 
-router.get("/trips", authorizeRoles("admin", "manager", "driver"), asyncHandler(listTrips));
+router.get("/trips", asyncHandler(listTrips));
 router.post(
   "/trips",
-  authorizeRoles("admin", "manager"),
   validateTrip,
   handleValidationErrors,
   asyncHandler(addTrip)
 );
-router.put("/trips/:id", authorizeRoles("admin", "manager"), asyncHandler(editTrip));
-router.delete("/trips/:id", authorizeRoles("admin", "manager"), asyncHandler(removeTrip));
+router.put("/trips/:id", asyncHandler(editTrip));
+router.delete("/trips/:id", asyncHandler(removeTrip));
 
 module.exports = router;

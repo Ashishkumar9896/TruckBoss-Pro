@@ -5,7 +5,6 @@ const {
   removeFuel,
 } = require("../controllers/fuelController");
 const asyncHandler = require("../middleware/asyncHandler");
-const { authorizeRoles } = require("../middleware/roleMiddleware");
 const {
   validateFuel,
   handleValidationErrors,
@@ -13,14 +12,13 @@ const {
 
 const router = express.Router();
 
-router.get("/fuel", authorizeRoles("admin", "manager", "driver"), asyncHandler(listFuel));
+router.get("/fuel", asyncHandler(listFuel));
 router.post(
   "/fuel",
-  authorizeRoles("admin", "manager"),
   validateFuel,
   handleValidationErrors,
   asyncHandler(addFuel)
 );
-router.delete("/fuel/:id", authorizeRoles("admin", "manager"), asyncHandler(removeFuel));
+router.delete("/fuel/:id", asyncHandler(removeFuel));
 
 module.exports = router;

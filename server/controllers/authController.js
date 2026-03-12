@@ -4,7 +4,8 @@ const { findUserByEmail, findUserIdByEmail, createUser } = require("../models/us
 
 async function register(req, res, next) {
   try {
-    const { email, password, full_name, role = "admin" } = req.body;
+    const { email, password, full_name } = req.body;
+    const role = "admin";
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }

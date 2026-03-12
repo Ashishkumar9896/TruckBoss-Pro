@@ -1,6 +1,5 @@
 const express = require("express");
 const asyncHandler = require("../middleware/asyncHandler");
-const { authorizeRoles } = require("../middleware/roleMiddleware");
 const {
   exportTripsPdf,
   exportTripsExcel,
@@ -11,24 +10,21 @@ const {
 
 const router = express.Router();
 
-router.get("/reports/trips/pdf", authorizeRoles("admin", "manager"), asyncHandler(exportTripsPdf));
-router.get("/reports/trips/excel", authorizeRoles("admin", "manager"), asyncHandler(exportTripsExcel));
-router.get("/reports/fuel/excel", authorizeRoles("admin", "manager"), asyncHandler(exportFuelExcel));
+router.get("/reports/trips/pdf", asyncHandler(exportTripsPdf));
+router.get("/reports/trips/excel", asyncHandler(exportTripsExcel));
+router.get("/reports/fuel/excel", asyncHandler(exportFuelExcel));
 router.get(
   "/reports/revenue/monthly/excel",
-  authorizeRoles("admin", "manager"),
   asyncHandler(exportMonthlyRevenueExcel)
 );
 router.get(
   "/reports/revenue/monthly/pdf",
-  authorizeRoles("admin", "manager"),
   asyncHandler(exportMonthlyRevenuePdf)
 );
 
 // Alias for clients expecting the simplified revenue PDF path.
 router.get(
   "/reports/revenue/pdf",
-  authorizeRoles("admin", "manager"),
   asyncHandler(exportMonthlyRevenuePdf)
 );
 
