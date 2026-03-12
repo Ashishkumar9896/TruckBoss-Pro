@@ -213,16 +213,6 @@ npm run dev
 - Toast notifications for user feedback
 - Loading spinners and error states
 
-## Screenshots
-
-Add screenshots to the `screenshots/` folder and link them here.
-
-### Dashboard
-![Dashboard](screenshots/dashboard.png)
-
-### Trips
-![Trips](screenshots/trips.png)
-
 ## Project Structure
 
 ```
