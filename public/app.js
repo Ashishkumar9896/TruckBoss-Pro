@@ -127,6 +127,23 @@ function enterDashboard(user) {
   loadDashboard();
 }
 
+/* ── Settings Dropdown ── */
+function toggleSettingsMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('settingsMenu');
+  menu.classList.toggle('show');
+}
+
+// Global click listener to close dropdowns
+window.addEventListener('click', (e) => {
+  const menu = document.getElementById('settingsMenu');
+  if (menu && menu.classList.contains('show')) {
+    if (!e.target.closest('.settings-dropdown')) {
+      menu.classList.remove('show');
+    }
+  }
+});
+
 /* ── Navigation ── */
 function switchView(name) {
   document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');

@@ -124,10 +124,67 @@
         <div class="user">
           <img src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff" alt="Avatar" class="avatar" id="userAvatar">
           <span id="username">Admin</span>
-          <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+          <div class="settings-dropdown">
+            <button class="btn-icon" id="settingsBtn" onclick="toggleSettingsMenu(event)" title="Settings">
+              <i class="fa-solid fa-cog" style="font-size: 1.25rem;"></i>
+            </button>
+            <div id="settingsMenu" class="dropdown-menu">
+              <button onclick="openModal('supportModal')"><i class="fa-solid fa-headset"></i> Support</button>
+              <button onclick="openModal('faqModal')"><i class="fa-solid fa-circle-question"></i> FAQ</button>
+              <hr>
+              <button onclick="logout()" class="text-danger"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+            </div>
+          </div>
         </div>
       </div>
     </header>
+
+    <!-- Support Modal -->
+    <div id="supportModal" class="modal-overlay" style="display:none">
+      <div class="modal-box">
+        <button class="close-btn" onclick="closeModal('supportModal')">&times;</button>
+        <h2>Technical Support</h2>
+        <div class="support-content">
+          <p>Need help? Our team is available 24/7 for fleet emergencies.</p>
+          <div class="contact-card">
+            <i class="fa-solid fa-envelope"></i>
+            <div>
+              <strong>Email Us</strong>
+              <p>support@truckbosspro.com</p>
+            </div>
+          </div>
+          <div class="contact-card">
+            <i class="fa-solid fa-phone"></i>
+            <div>
+              <strong>WhatsApp Support</strong>
+              <p>+91 98765 43210</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Modal -->
+    <div id="faqModal" class="modal-overlay" style="display:none">
+      <div class="modal-box modal-large">
+        <button class="close-btn" onclick="closeModal('faqModal')">&times;</button>
+        <h2>Frequently Asked Questions</h2>
+        <div class="faq-list">
+          <div class="faq-item">
+            <strong>How do I add a new truck?</strong>
+            <p>Go to the 'Trucks' tab and click the 'Add Truck' button in the top right corner.</p>
+          </div>
+          <div class="faq-item">
+            <strong>How is profit calculated?</strong>
+            <p>Profit = (Total Amount) - (Fuel Cost + Tolls + Misc Expenses).</p>
+          </div>
+          <div class="faq-item">
+            <strong>What is the Maintenance Forecast?</strong>
+            <p>It predicts service needs based on the number of trips completed since the last maintenance record.</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div id="dynamicContentWrapper">
 
