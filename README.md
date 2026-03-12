@@ -1,18 +1,29 @@
 # 🚛 TruckBoss Pro
 
-**India's Smart Fleet Command Center** — A full-stack truck transportation management system to manage trucks, drivers, customers, trips, and fuel records through a modern dark-themed dashboard.
+**India's Smart Fleet Command Center** — A full-stack truck transportation management system to manage trucks, drivers, customers, trips, fuel records, and maintenance through a modern professional dashboard.
+
+### 🌐 [Live Demo → truckboss-pro.onrender.com](https://truckboss-pro.onrender.com)
 
 ## Features
 
-- 🔐 JWT Authentication (Register / Login with bcrypt password hashing)
-- 📊 Dashboard with live stats cards and Chart.js charts (revenue bar + fleet status doughnut)
+- 🔐 JWT Authentication with professional split-screen login/register page
+- 📊 Dashboard with 6 metric cards — Total Trucks, Drivers, Trips, Revenue, Fuel Cost, Profit
+- 📈 Interactive Chart.js charts — Monthly Revenue (bar) & Fuel Trend (line)
+- 🔧 Maintenance Forecasting — Trip-based service predictions with color-coded alerts
+- 🏆 Driver Performance Leaderboard — Gamified rankings based on trips, revenue & efficiency
+- 📉 Advanced Analytics — 12-month trends, trip status breakdown, top drivers
+- ⛽ Fuel Efficiency Analysis — Per-truck consumption tracking & monthly trends
 - 👥 Customers CRUD — name, phone, address, amount paid, balance
 - 🚗 Drivers CRUD — name, licence number, phone, salary, status
 - 🚛 Trucks CRUD — truck number, assigned driver, status, maintenance notes
 - 🗺️ Trips management — route, truck, driver, customer, amount, status, date
 - ⛽ Fuel records tracking — truck, driver, liters, price, date
-- 🌙 Dark-themed responsive UI (mobile-friendly)
-- 🔌 RESTful JSON API with MySQL backend
+- 📄 PDF & Excel report exports (trips, fuel, revenue)
+- 🔔 Real-time updates via Socket.IO
+- 🌙 Dark/Light theme toggle
+- 📱 Fully responsive (mobile-friendly)
+- 💬 Built-in Support & FAQ
+- 🔌 RESTful JSON API with MySQL/TiDB backend
 
 ## Access Control (Role-Based)
 
@@ -66,10 +77,13 @@ Libraries used:
 |-----------|-----------------------------------------|
 | Backend   | Node.js, Express.js                     |
 | Auth      | JSON Web Tokens (JWT), bcryptjs         |
-| Database  | MySQL 8.0+, mysql2 (promise pool)       |
+| Database  | MySQL 8.0+ / TiDB Cloud (Serverless)   |
 | Frontend  | HTML5, CSS3, Vanilla JavaScript         |
+| Real-time | Socket.IO                               |
 | Charts    | Chart.js                                |
-| Icons     | Remix Icon 4.9.0                        |
+| Icons     | Font Awesome 6.4                        |
+| Reports   | PDFKit, ExcelJS                         |
+| Hosting   | Render (Web Service)                    |
 
 ## Prerequisites
 
@@ -106,17 +120,19 @@ npm run dev
 
 ## Environment Variables (.env)
 
-| Variable       | Default                              | Description                  |
-|----------------|--------------------------------------|------------------------------|
-| DB_HOST        | localhost                            | MySQL host                   |
-| DB_USER        | root                                 | MySQL username               |
-| DB_PASSWORD    | your_password_here                   | MySQL password               |
-| DB_NAME        | trucks                               | MySQL database name          |
-| DB_PORT        | 3306                                 | MySQL port                   |
-| PORT           | 3000                                 | Express server port          |
-| FRONTEND_ORIGIN| http://localhost:3000                | Allowed CORS frontend origin |
-| JWT_SECRET     | TruckBoss_Super_Secret_Key_2026_...  | JWT signing secret           |
-| JWT_EXPIRES_IN | 7d                                   | JWT expiry duration          |
+| Variable       | Default                              | Description                       |
+|----------------|--------------------------------------|-----------------------------------|
+| DB_HOST        | localhost                            | MySQL / TiDB host                 |
+| DB_USER        | root                                 | Database username                 |
+| DB_PASSWORD    | your_password_here                   | Database password                 |
+| DB_NAME        | trucks                               | Database name                     |
+| DB_PORT        | 3306                                 | Database port (TiDB uses 4000)    |
+| DB_SSL         | false                                | Enable SSL (set `true` for TiDB)  |
+| PORT           | 3000                                 | Express server port               |
+| FRONTEND_ORIGIN| http://localhost:3000                | Allowed CORS frontend origin      |
+| JWT_SECRET     | TruckBoss_Super_Secret_Key_2026_...  | JWT signing secret                |
+| JWT_EXPIRES_IN | 7d                                   | JWT expiry duration               |
+| NODE_ENV       | development                          | Environment (production in deploy)|
 
 ## API Endpoints
 
@@ -186,12 +202,16 @@ npm run dev
 
 ## UI Highlights
 
-- Sidebar dashboard navigation
-- Topbar profile context
-- Metric cards and charts
-- Rich data tables
-- Export action buttons
-- Trip search filters and pagination
+- Professional split-screen auth page with animated branding
+- Collapsible glassmorphism sidebar with gradient navigation
+- 6 animated metric cards with live data
+- Interactive Chart.js visualizations
+- Maintenance forecast table with color-coded status badges
+- Dark/Light theme toggle (persists across sessions)
+- Topbar with notifications, settings dropdown, support & FAQ
+- Responsive design — works on desktop, tablet, and mobile
+- Toast notifications for user feedback
+- Loading spinners and error states
 
 ## Screenshots
 
@@ -207,19 +227,35 @@ Add screenshots to the `screenshots/` folder and link them here.
 
 ```
 TruckBoss-Pro/
-├── server.js                  # Express server + REST API routes
+├── server.js                  # Express server entry point
+├── render.yaml                # Render deployment blueprint
 ├── package.json               # Node.js dependencies
-├── .env.example               # Environment variables template
-├── .gitignore                 # Ignore node_modules, .env
 ├── database/
-│   ├── setup.sql              # MySQL schema (table creation)
+│   ├── setup.sql              # MySQL/TiDB schema (table creation)
 │   └── seed_data.sql          # Sample data for all tables
 ├── public/
 │   ├── index.html             # Single-page frontend app
-│   ├── style.css              # Dark-themed responsive CSS
+│   ├── style.css              # Dark/Light themed responsive CSS
 │   └── app.js                 # Frontend JavaScript (API-connected)
-└── README.md                  # This file
+├── server/
+│   ├── config/db.js           # MySQL/TiDB connection pool (SSL support)
+│   ├── controllers/           # Route handlers (auth, dashboard, CRUD, analytics)
+│   ├── middleware/             # Auth, validation, error handling, permissions
+│   ├── models/                # Database query functions
+│   ├── routes/                # Express route definitions
+│   ├── scripts/backup.js      # Automated database backup
+│   ├── utils/auditLogger.js   # Audit logging utility
+│   └── socket.js              # Socket.IO real-time events
+└── README.md
 ```
+
+## Deployment
+
+Deployed on **Render** with **TiDB Cloud** (Serverless MySQL):
+
+1. Push to GitHub → Render auto-deploys from `main` branch
+2. Database hosted on TiDB Cloud (free tier, SSL enabled)
+3. Environment variables configured in Render dashboard
 
 ## License
 
