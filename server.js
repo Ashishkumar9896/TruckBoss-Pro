@@ -43,16 +43,27 @@ cron.schedule("0 2 * * *", async () => {
 // The current frontend uses CDN scripts and inline handlers; disable CSP for compatibility.
 app.use(helmet({ contentSecurityPolicy: false }));
 
-// Build allowed origins list from FRONTEND_ORIGIN (supports comma-separated values)
-const allowedOrigins = frontendOrigin.split(",").map((o) => o.trim());
+// Build allowed origins list, including Render's external URL if provided.
+const allowedOrigins = [
+  ...frontendOrigin.split(",").map((o) => o.trim()),
+  process.env.RENDER_EXTERNAL_URL,
+].filter(Boolean);
 
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow same-origin/server-to-server requests with no Origin header.
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+      // Allow same-origin requests (no Origin header).
+      if (!origin) return callback(null, true);
+
+      // Normalize both origin and allowed list to handle trailing slashes.
+      const normalizedOrigin = origin.replace(/\/$/, "");
+      const isAllowed = allowedOrigins.some((allowed) => {
+        return allowed.replace(/\/$/, "") === normalizedOrigin;
+      });
+
+      if (isAllowed) return callback(null, true);
+
+      console.error(`[CORS] Request from ${origin} blocked. Allowed: ${allowedOrigins.join(", ")}`);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
