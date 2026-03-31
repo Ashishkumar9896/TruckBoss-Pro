@@ -1873,7 +1873,7 @@ async function fetchTrips() {
 
     const offset = (appState.trips.page - 1) * appState.trips.limit;
     tbody.innerHTML = appState.trips.rows.map((t, i) => `<tr>
-      <td>${offset + i + 1}</td>
+      <td class="hide-mobile">${offset + i + 1}</td>
       <td>${esc(t.material_type || '—')}</td>
       <td>${t.quantity || 0} Tons</td>
       <td>${esc(t.truck_no || '—')}</td><td>${esc(t.driver_name || '—')}</td><td>${esc(t.customer_name || '—')}</td>
@@ -2141,8 +2141,8 @@ async function fetchFuelData() {
       const price  = Number(f.price  || 0);
       const rate   = liters > 0 ? (price / liters).toFixed(2) : '—';
       return `<tr>
-        <td>${offset + i + 1}</td>
-        <td><span class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);font-weight:600;">
+        <td class="hide-mobile">${offset + i + 1}</td>
+        <td class="hide-mobile"><span class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);font-weight:600;">
           <i class="fa-solid fa-truck" style="margin-right:4px;font-size:0.7rem;"></i>${esc(f.truck_no || '—')}
         </span></td>
         <td>${esc(f.driver_name || '—')}</td>
@@ -2415,14 +2415,14 @@ async function loadMaintenance() {
       const serviceLabel = m.service_type || serviceType;
       const notesLabel   = m.notes || notes;
       return `<tr>
-        <td>${offset + i + 1}</td>
-        <td><span class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);font-weight:600;">
+        <td class="hide-mobile">${offset + i + 1}</td>
+        <td class="hide-mobile"><span class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);font-weight:600;">
           <i class="fa-solid fa-truck" style="margin-right:4px;font-size:0.7rem;"></i>${esc(m.truck_no || '—')}
         </span></td>
-        <td><span class="status-badge" style="background:rgba(139,92,246,0.1);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);">
+        <td class="hide-mobile"><span class="status-badge" style="background:rgba(139,92,246,0.1);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);">
           <i class="fa-solid fa-screwdriver-wrench" style="margin-right:4px;font-size:0.7rem;"></i>${esc(serviceLabel)}
         </span></td>
-        <td style="color:var(--text-muted);font-size:0.85rem;">${esc(notesLabel)}</td>
+        <td class="hide-mobile" style="color:var(--text-muted);font-size:0.85rem;">${esc(notesLabel)}</td>
         <td><span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--text-muted);">
           <i class="fa-regular fa-calendar" style="font-size:0.75rem;"></i>${fmtDate(m.service_date)}
         </span></td>
@@ -2495,13 +2495,25 @@ async function submitMaintenance(e) {
   body.append('service_date', document.getElementById('mtnDate').value);
   body.append('cost', document.getElementById('mtnCost').value);
   body.append('description', description);
+  const btn = e.target.querySelector('button[type="submit"]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+
   const proofFile = document.getElementById('mtnProof')?.files?.[0];
-  if (proofFile) body.append('proof_document', proofFile);
+  if (proofFile) {
+    console.log("Maintenance Upload: Sending file", { name: proofFile.name, size: proofFile.size });
+    body.append('proof_document', proofFile);
+  }
+
   try {
     if (id) { await api(`/api/maintenance/${id}`, { method: 'PUT', body }); showToast('Record updated', 'success'); }
     else     { await api('/api/maintenance',       { method: 'POST', body }); showToast('Service logged', 'success'); }
     cancelForm('maintenanceForm'); resetMaintenanceForm(); loadMaintenance();
-  } catch (err) { showToast(err.message, 'error'); }
+  } catch (err) { 
+    console.error("Maintenance Submission Error:", err);
+    showToast(err.message, 'error'); 
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-save"></i> Save Record'; }
+  }
 }
 
 async function deleteMaintenance(id) {

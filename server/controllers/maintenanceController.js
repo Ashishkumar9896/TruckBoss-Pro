@@ -26,6 +26,11 @@ exports.getMaintenance = async (req, res, next) => {
 exports.addMaintenance = async (req, res, next) => {
   try {
     const { truck_id, service_date, cost, description } = req.body;
+    console.log("Maintenance Upload Debug:", { 
+      hasFile: !!req.file, 
+      fileInfo: req.file ? { name: req.file.originalname, size: req.file.size, type: req.file.mimetype } : "none",
+      body: req.body 
+    });
     const proof_document = req.file ? await storeProofDocument(req.file) : null;
     await maintenanceModel.createMaintenance(truck_id, service_date, cost, description, proof_document);
     // Auto-clear the truck's pending maintenance note
