@@ -1,47 +1,101 @@
-# 🚛 TruckBoss Pro
+# Bihal Suppliers — Fleet Management System
 
-**India's Smart Fleet Command Center** — Manage trucks, drivers, fuel, and revenue all in one dashboard.
+A web-based fleet management system for tracking trucks, drivers, customers, trips, fuel, and maintenance. Built with Node.js, Express, and MySQL.
 
 ## Features
 
-- JWT Authentication (Register/Login)
-- Dashboard with live stats and Chart.js charts
-- Customers CRUD management
-- Drivers CRUD with licence tracking
-- Trucks CRUD with fleet status pie chart
-- Trips management with route visualization
-- Fuel records tracking
-- Dark-themed responsive UI
-- RESTful API with MySQL backend
+- JWT-based login (admin / manager roles)
+- Dashboard with revenue, profit, fuel, and maintenance stats
+- Trucks, Drivers, Customers — full CRUD
+- Trip management with material type and tonnage
+- Fuel records with per-truck consumption tracking
+- Maintenance log with photo/PDF proof upload (Cloudinary)
+- Monthly PDF and Excel report exports
+- Real-time updates via Socket.IO
+- Dark/Light theme, mobile responsive
 
 ## Tech Stack
 
-- **Backend:** Node.js, Express.js, MySQL2, JWT, bcrypt
-- **Frontend:** HTML5, CSS3, JavaScript, Chart.js, Remix Icons
-- **Database:** MySQL 8.0+
+- **Backend:** Node.js, Express.js
+- **Database:** MySQL 8.0 / TiDB Cloud
+- **Frontend:** HTML, CSS, Vanilla JavaScript
+- **Auth:** JWT + bcryptjs
+- **Real-time:** Socket.IO
+- **Charts:** Chart.js
+- **Reports:** PDFKit, ExcelJS
+- **File Storage:** Cloudinary (maintenance proofs)
+- **Hosting:** Render
 
-## Quick Start
+## Setup
+
+### 1. Clone the repo
 
 ```bash
-# Clone the repo
 git clone https://github.com/Ashishkumar9896/TruckBoss-Pro.git
 cd TruckBoss-Pro
+```
 
-# Install dependencies
+### 2. Install dependencies
+
+```bash
 npm install
+```
 
-# Setup MySQL database
-mysql -u root -p < database/setup.sql
-mysql -u root -p < database/seed_data.sql
+### 3. Set up the database
 
-# Configure environment
+Create a MySQL database named `trucks` and import the schema:
+
+```bash
+mysql -u root -p trucks < database.sql
+```
+
+### 4. Configure environment variables
+
+Copy `.env.example` to `.env` and fill in your values:
+
+```bash
 cp .env.example .env
-# Edit .env with your MySQL password
+```
 
-# Start the server
-npm run dev
+Key variables:
+- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`
+- `JWT_SECRET` — use a long random string
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — for proof uploads
 
-# Open http://localhost:3000
+### 5. Start the server
+
+```bash
+npm start
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+## Deployment (Render)
+
+1. Push to GitHub → Render auto-deploys from `main`
+2. Add all environment variables in Render dashboard
+3. Use TiDB Cloud (or any MySQL-compatible DB) with SSL enabled
+
+## Project Structure
+
+```
+├── server.js              # Entry point
+├── package.json
+├── database.sql           # MySQL schema
+├── public/                # Frontend
+│   ├── index.html
+│   ├── app.js
+│   └── style.css
+├── server/
+│   ├── config/            # DB connection
+│   ├── controllers/       # Route handlers
+│   ├── middleware/        # Auth, validation
+│   ├── models/            # DB query functions
+│   ├── routes/            # API routes
+│   ├── scripts/           # Cron jobs (backup)
+│   ├── services/          # Cloudinary storage
+│   └── socket.js          # Socket.IO events
+└── .env.example
 ```
 
 ## License

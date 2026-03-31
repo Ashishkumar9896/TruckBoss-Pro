@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bihal Supplier</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bihal Fleet">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="/vendor/chart/chart.umd.js"></script>
+  <!-- Leaflet Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+  <link rel="stylesheet" href="/style.css?v=20">
+</head>
+
+<body>
+
+  <!-- Landing / Auth Page -->
+  <section id="landingPage" class="auth-page">
+    <!-- Left: Branding Panel -->
+    <div class="auth-branding">
+      <div class="auth-branding-inner">
+        <div style="margin-bottom: 1.5rem;">
+          <img src="/bihal-logo.png" alt="Bihal Supplier Logo" class="logo-auth" />
+        </div>
+        <h1>Bihal Supplier</h1>
+        <p class="auth-tagline">Your Partner for Efficient Fleet Management</p>
+        <div class="auth-features">
+          <div class="auth-feature"><i class="fa-solid fa-chart-line"></i><span>Real-time Fleet Analytics</span></div>
+          <div class="auth-feature"><i class="fa-solid fa-route"></i><span>Trip & Revenue Tracking</span></div>
+          <div class="auth-feature"><i class="fa-solid fa-gas-pump"></i><span>Fuel Cost Management</span></div>
+          <div class="auth-feature"><i class="fa-solid fa-wrench"></i><span>Maintenance Forecasting</span></div>
+        </div>
+      </div>
+      <div class="auth-branding-footer">
+        <p>&copy; 2026 Bihal Supplier. All rights reserved.</p>
+      </div>
+    </div>
+
+    <!-- Right: Auth Forms -->
+    <div class="auth-forms-panel">
+      <div class="auth-topbar">
+        <div class="auth-topbar-links">
+          <button onclick="openModal('supportModal')" class="auth-link-btn"><i class="fa-solid fa-headset"></i>
+            Support</button>
+          <button onclick="openModal('faqModal')" class="auth-link-btn"><i class="fa-solid fa-circle-question"></i>
+            FAQ</button>
+        </div>
+        <button onclick="toggleLandingTheme()" class="auth-theme-btn" id="landingThemeBtn" title="Toggle theme"><i
+            class="fa-solid fa-moon" id="landingThemeIcon"></i></button>
+      </div>
+
+      <div class="auth-form-wrapper">
+        <!-- Login Form -->
+        <div id="authLoginCard" class="auth-card">
+          <h2>Welcome back</h2>
+          <p class="auth-subtitle">Sign in to your fleet dashboard</p>
+          <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label>Email</label>
+              <div class="input-icon-wrap"><i class="fa-solid fa-envelope"></i><input type="email" id="loginEmail"
+                  placeholder="you@company.com" required></div>
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <div class="input-icon-wrap password-field">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility(this)"
+                  aria-label="Show password" aria-pressed="false">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="btn-primary full-width auth-submit-btn"><i
+                class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Auth Forms section ends above --><!-- Support Modal (shared by landing & app) -->
+  <div id="supportModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <button class="close-btn" onclick="closeModal('supportModal')">&times;</button>
+      <h2>Technical Support</h2>
+      <div class="support-content">
+        <p>Need help? Our team is available 24/7 for fleet emergencies.</p>
+        <div class="contact-card">
+          <i class="fa-solid fa-envelope"></i>
+          <div>
+            <strong>Email Us</strong>
+            <p>support@bihalsupplier.com</p>
+          </div>
+        </div>
+        <div class="contact-card">
+          <i class="fa-solid fa-phone"></i>
+          <div>
+            <strong>WhatsApp Support</strong>
+            <p>+91 98765 43210</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ Modal (shared by landing & app) -->
+  <div id="faqModal" class="modal-overlay" style="display:none">
+    <div class="modal-box modal-large">
+      <button class="close-btn" onclick="closeModal('faqModal')">&times;</button>
+      <h2>Frequently Asked Questions</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <strong>How do I add a new truck?</strong>
+          <p>Go to the 'Trucks' tab and click the 'Add Truck' button in the top right corner.</p>
+        </div>
+        <div class="faq-item">
+          <strong>How is profit calculated?</strong>
+          <p>Profit = Trip Amount - Fuel Cost.</p>
+        </div>
+        <div class="faq-item">
+          <strong>What is the Maintenance Forecast?</strong>
+          <p>It predicts service needs based on the number of trips completed since the last maintenance record.</p>
+        </div>
+
+        <div class="faq-item">
+          <strong>How do I create admin or manager accounts?</strong>
+          <p>Go to the ⚙️ Settings menu (top-right cog icon) → click <b>Add User</b>. You can choose the role (Admin or
+            Manager) when creating the account.</p>
+        </div>
+
+        <div class="faq-item">
+          <strong>How do Notifications work?</strong>
+          <p>Click the <b>Bell Icon</b> <i class="fa-solid fa-bell"></i> in the top right to open your notifications
+            panel. You will receive real-time alerts for Trucks that are <b>Overdue for Maintenance</b> (Over 15 trips)
+            and Trips that are marked as <b>Pending</b>.</p>
+        </div>
+
+        <div class="faq-item">
+          <strong>How do I view Fuel Volume and Cost together?</strong>
+          <p>In both the Dashboard and the Fuel Efficiency tab, the Fuel trend graphs are beautifully styled Bar Charts.
+            Simply <b>hover your mouse</b> over any month's bar to see a sleek tooltip displaying both the Total Cost
+            (₹) and the exact Volume (Liters) purchased.</p>
+        </div>
+
+        <div class="faq-item">
+          <strong>Can I see which driver purchased the fuel when I export records?</strong>
+          <p>Yes, go to the <b>Fuel Records</b> tab, apply any filters you want, and click <b>Export Excel</b>. The
+            spreadsheet will automatically include the assigned <b>Driver Name</b> alongside the Truck details and Cost.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== MAIN APP ========== -->
+  <!-- Mobile overlay backdrop -->
+  <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <div id="dashboardPage" class="app" style="display:none">
+    <aside class="sidebar" id="mainSidebar">
+      <!-- Logo -->
+      <div class="sidebar-logo">
+        <img src="/bihal-logo.png" alt="Bihal Supplier Logo" class="logo-sidebar" />
+        <span class="logo-text" style="display:none;">Bihal Supplier</span>
+      </div>
+
+      <!-- Collapse Toggle -->
+      <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
+      <!-- Navigation -->
+      <div class="sidebar-menu-heading">
+        <span>Navigation</span>
+        <small>Fleet workspace</small>
+      </div>
+      <ul class="menu">
+        <li class="menu-item active" id="menu-dashboard" onclick="loadDashboard()">
+          <i class="fa-solid fa-chart-line"></i><span>Dashboard</span>
+        </li>
+        <li class="menu-item" id="menu-trucks" onclick="loadTrucks()">
+          <i class="fa-solid fa-truck"></i><span>Trucks</span>
+        </li>
+        <li class="menu-item" id="menu-maintenance" onclick="loadMaintenance()">
+          <i class="fa-solid fa-wrench"></i><span>Maintenance</span>
+        </li>
+        <li class="menu-item" id="menu-drivers" onclick="loadDrivers()">
+          <i class="fa-solid fa-id-card"></i><span>Drivers</span>
+        </li>
+        <li class="menu-item" id="menu-performance" onclick="loadPerformance()">
+          <i class="fa-solid fa-trophy"></i><span>Performance</span>
+        </li>
+        <li class="menu-item" id="menu-customers" onclick="loadCustomers()">
+          <i class="fa-solid fa-users"></i><span>Customers</span>
+        </li>
+        <li class="menu-item" id="menu-trips" onclick="loadTrips()">
+          <i class="fa-solid fa-route"></i><span>Trips</span>
+        </li>
+        <li class="menu-item" id="menu-fuel" onclick="loadFuel()">
+          <i class="fa-solid fa-gas-pump"></i><span>Fuel</span>
+        </li>
+        <li class="menu-item" id="menu-settings" onclick="toggleSettingsMenu(event)">
+        </li>
+      </ul>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <img src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff" alt="Avatar"
+            class="sidebar-avatar" id="sidebarAvatar">
+          <span class="sidebar-username" id="sidebarUsername">Admin</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+          <div class="title" id="pageTitle">Dashboard</div>
+        </div>
+        <div class="user-info">
+          <button id="themeToggleBtn" onclick="toggleTheme()" class="btn-icon" title="Toggle Theme"
+            style="border:none; background:transparent;"><i class="fa-solid fa-moon" id="themeIcon"
+              style="font-size: 1.25rem;"></i></button>
+          <div class="notifications" style="position:relative;">
+            <button class="btn-icon" id="notifBtn" onclick="toggleNotifMenu(event)" title="Notifications"
+              style="border:none;background:transparent;">
+              <i class="fa-regular fa-bell" style="font-size:1.25rem;"></i>
+              <span class="notif-badge" id="alertBadge" style="display:none;">0</span>
+            </button>
+            <div id="notifMenu" class="dropdown-menu"
+              style="width:320px;padding:0;max-height:400px;overflow-y:auto;right:-10px;">
+              <div
+                style="padding:0.75rem 1rem;font-weight:600;border-bottom:1px solid var(--border-color);background:var(--bg-panel);position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;">
+                <span><i class="fa-solid fa-bell" style="color:var(--primary);margin-right:0.4rem;"></i>
+                  Notifications</span>
+              </div>
+              <div id="notifList" style="padding:0.5rem;">
+                <div style="padding:1rem;text-align:center;color:var(--text-muted);font-size:0.9rem;">Loading...</div>
+              </div>
+            </div>
+          </div>
+          <div class="user">
+            <div class="user-avatar-dropdown" style="position:relative;display:inline-block;">
+              <img src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff" alt="Avatar" class="avatar"
+                id="userAvatar" onclick="toggleSettingsMenu(event)" style="cursor:pointer;">
+              <span id="username">Admin</span>
+              <div id="settingsMenu" class="dropdown-menu"
+                style="right:0;left:auto;top:calc(100% + 10px);min-width:220px;">
+                <button class="dropdown-item" onclick="openModal('supportModal')"><i
+                    class="fa-solid fa-headset"></i>Support</button>
+                <button class="dropdown-item" onclick="openModal('faqModal')"><i
+                    class="fa-solid fa-circle-question"></i>FAQ</button>
+                <hr>
+                <button class="dropdown-item" onclick="showAddUserModal()"><i class="fa-solid fa-user-plus"></i>Add
+                  User</button>
+                <button class="dropdown-item" id="installAppBtn" style="display:none;" onclick="triggerInstall()"><i
+                    class="fa-solid fa-download"></i>Install App</button>
+                <hr>
+                <button class="dropdown-item text-danger" onclick="logout()"><i
+                    class="fa-solid fa-arrow-right-from-bracket"></i>Logout</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div id="dynamicContentWrapper">
+
+        <!-- ===== DASHBOARD VIEW ===== -->
+        <div id="view-dashboard" class="view-section active">
+          <div id="dashboardAlerts" class="alerts-container"></div>
+          <section class="dashboard-quick-actions">
+            <div class="quick-actions-card">
+              <div class="quick-actions-head">
+                <div>
+                  <h4>Quick Actions</h4>
+                  <p>Jump into the most common daily tasks.</p>
+                </div>
+                <div class="quick-actions-badge"><i class="fa-solid fa-bolt"></i> Ops</div>
+              </div>
+              <div class="quick-actions-grid">
+                <button class="quick-action-btn quick-action-btn-primary"
+                  onclick="loadTrips(); document.getElementById('tripForm').style.display='block';">
+                  <span class="quick-action-icon"><i class="fa-solid fa-plus"></i></span>
+                  <span class="quick-action-copy">
+                    <strong>Add Trip</strong>
+                    <small>Create and assign a new load</small>
+                  </span>
+                </button>
+                <button class="quick-action-btn" onclick="loadCustomers();">
+                  <span class="quick-action-icon"><i class="fa-solid fa-indian-rupee-sign"></i></span>
+                  <span class="quick-action-copy">
+                    <strong>Add Payment</strong>
+                    <small>Record customer collection</small>
+                  </span>
+                </button>
+                <button class="quick-action-btn"
+                  onclick="loadFuel(); document.getElementById('fuelForm').style.display='block';">
+                  <span class="quick-action-icon"><i class="fa-solid fa-gas-pump"></i></span>
+                  <span class="quick-action-copy">
+                    <strong>Log Fuel</strong>
+                    <small>Update fuel cost and liters</small>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </section>
+          <section class="metrics" id="metricsContainer">
+            <div class="metric-card">
+              <h4>Today Collection</h4>
+              <div class="value-row">
+                <p id="todayCollectionVal">₹0</p><i class="fa-solid fa-money-bill-wave icon-green"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Pending Dues</h4>
+              <div class="value-row">
+                <p id="pendingDuesVal">₹0</p><i class="fa-solid fa-wallet icon-red"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Active Trips</h4>
+              <div class="value-row">
+                <p id="activeTripsVal">0</p><i class="fa-solid fa-route icon-orange"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Idle Trucks</h4>
+              <div class="value-row">
+                <p id="idleTrucksVal">0</p><i class="fa-solid fa-truck icon-cyan"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Total Trucks</h4>
+              <div class="value-row">
+                <p id="totalTrucks">0</p><i class="fa-solid fa-truck-ramp-box icon-blue"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Total Drivers</h4>
+              <div class="value-row">
+                <p id="totalDriversVal">0</p><i class="fa-solid fa-id-card icon-cyan"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Total Trips</h4>
+              <div class="value-row">
+                <p id="totalTripsVal">0</p><i class="fa-solid fa-route icon-orange"></i>
+              </div>
+            </div>
+            <div class="metric-card" onclick="toggleRevenueView()"
+              style="cursor: pointer; position: relative; transition: transform 0.2s;"
+              onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'"
+              title="Click to toggle Today/Yesterday">
+              <h4 id="revenueDailyTitle">Today Revenue</h4>
+              <div class="value-row">
+                <p id="dailyRevenueVal">₹0</p><i id="revenueDailyIcon" class="fa-solid fa-calendar-day icon-cyan"></i>
+              </div>
+            </div>
+            <div class="metric-card" onclick="toggleRevenueTotalView()"
+              style="cursor: pointer; position: relative; transition: transform 0.2s;"
+              onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'"
+              title="Click to toggle Total Revenue/This Month Revenue">
+              <h4 id="revenueTotalTitle">Total Revenue</h4>
+              <div class="value-row">
+                <p id="totalRevenueVal">₹0</p><i id="revenueTotalIcon" class="fa-solid fa-sack-dollar icon-green"></i>
+              </div>
+            </div>
+
+            <div class="metric-card" onclick="toggleProfitTotalView()"
+              style="cursor: pointer; position: relative; transition: transform 0.2s;"
+              onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'"
+              title="Click to toggle Total Profit/This Month Profit">
+              <h4 id="profitTotalTitle"><span id="profitLabelText">Total Profit</span> <i
+                  class="fa-solid fa-circle-info"
+                  style="font-size: 0.8rem; cursor: help; color: var(--text-muted); margin-left: 4px;"
+                  title="Profit = Gross Revenue - Fuel Cost" onclick="event.stopPropagation()"></i></h4>
+              <div class="value-row">
+                <p id="profitVal">₹0</p><i id="profitTotalIcon" class="fa-solid fa-money-bill-trend-up icon-green"></i>
+              </div>
+            </div>
+
+            <div class="metric-card" onclick="toggleFuelTotalView()"
+              style="cursor: pointer; position: relative; transition: transform 0.2s;"
+              onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'"
+              title="Click to toggle Total Fuel/This Month Fuel">
+              <h4 id="fuelTotalTitle">Total Fuel Cost</h4>
+              <div class="value-row">
+                <p id="fuelExpensesVal">₹0</p><i id="fuelTotalIcon" class="fa-solid fa-gas-pump icon-red"></i>
+              </div>
+            </div>
+
+            <div class="metric-card" onclick="switchView('maintenance')"
+              style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'"
+              onmouseout="this.style.transform='scale(1)'" title="View Maintenance Log">
+              <h4>Pending Services</h4>
+              <div class="value-row">
+                <p id="mtnStatPendingDashboard">0</p><i class="fa-solid fa-screwdriver-wrench icon-yellow"></i>
+              </div>
+            </div>
+
+          </section>
+          <section class="charts">
+            <div class="chart-container">
+              <h4>Monthly Revenue</h4>
+              <div class="canvas-wrap"><canvas id="revenueChart"></canvas></div>
+            </div>
+            <div class="chart-container">
+              <h4>Fuel Expenses Trend</h4>
+              <div class="canvas-wrap"><canvas id="fuelTrendChart"></canvas></div>
+            </div>
+          </section>
+          <section class="charts">
+            <div class="chart-container">
+              <h4>Monthly Decision Widgets</h4>
+              <div id="decisionWidgets" style="display:grid;gap:0.75rem;"></div>
+            </div>
+            <div class="chart-container">
+              <h4>Recent Activity Feed</h4>
+              <div id="recentActivityFeed" style="display:grid;gap:0.75rem;max-height:340px;overflow:auto;"></div>
+            </div>
+          </section>
+          <section class="tables">
+            <div class="table-header">
+              <h3>Maintenance Forecast</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Truck</th>
+                    <th>Last Serviced</th>
+                    <th>Trips Since</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="forecastTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== TRUCKS VIEW ===== -->
+        <div id="view-trucks" class="view-section" style="display:none">
+
+          <!-- Fleet Stat Cards -->
+          <section class="metrics customer-summary-grid" style="margin-bottom:1.5rem;">
+            <div class="metric-card">
+              <h4>Total Trucks</h4>
+              <div class="value-row">
+                <p id="fleetStatTotal">0</p><i class="fa-solid fa-truck-ramp-box icon-blue"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Available</h4>
+              <div class="value-row">
+                <p id="fleetStatAvail">0</p><i class="fa-solid fa-circle-check icon-green"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>In Use</h4>
+              <div class="value-row">
+                <p id="fleetStatInUse">0</p><i class="fa-solid fa-route icon-orange"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Under Maintenance</h4>
+              <div class="value-row">
+                <p id="fleetStatMaint">0</p><i class="fa-solid fa-wrench icon-red"></i>
+              </div>
+            </div>
+          </section>
+
+
+          <section class="tables">
+            <div class="table-header">
+              <h3><i class="fa-solid fa-truck" style="color:var(--primary);margin-right:0.5rem;"></i>Fleet Directory
+              </h3>
+              <button class="btn-primary"
+                onclick="resetTruckForm(); document.getElementById('truckForm').style.display='block'; document.getElementById('truckForm').scrollIntoView({behavior:'smooth'});">
+                <i class="fa-solid fa-plus"></i> Add Truck
+              </button>
+            </div>
+
+            <!-- Add/Edit Truck Form -->
+            <div id="truckForm" class="form-panel" style="display:none">
+              <div
+                style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-color);">
+                <i class="fa-solid fa-truck-ramp-box" style="color:var(--primary);font-size:1.1rem;"></i>
+                <h4 style="margin:0;font-size:1rem;" id="truckFormTitle">Add New Truck</h4>
+              </div>
+              <form onsubmit="submitTruck(event)">
+                <input type="hidden" id="trkId">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-hashtag"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Truck Number *</label>
+                    <input type="text" id="trkNo" placeholder="e.g. RJ-14-GA-1234" required>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-id-card"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Assigned
+                      Driver</label>
+                    <select id="trkDriver">
+                      <option value="">-- Unassigned --</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-circle-dot"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Status</label>
+                    <select id="trkStatus">
+                      <option value="Available">Available</option>
+                      <option value="In Use">In Use</option>
+                      <option value="Maintenance">Maintenance</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-wrench"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Maintenance
+                      Note</label>
+                    <input type="text" id="trkMaintenance" value="Not Required"
+                      placeholder="e.g. Oil Change, Tyre Replacement…">
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+                  <button type="button" class="btn-secondary" onclick="cancelForm('truckForm')"><i
+                      class="fa-solid fa-xmark"></i> Cancel</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>Truck No</th>
+                    <th>Driver</th>
+                    <th>Status</th>
+                    <th>Total Trips</th>
+                    <th>Fuel Records</th>
+                    <th>Last Maintenance</th>
+                    <th>Maintenance Note</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="trucksTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== DRIVERS VIEW ===== -->
+        <div id="view-drivers" class="view-section" style="display:none">
+
+          <!-- Driver Stat Cards -->
+          <section class="metrics customer-summary-grid" style="margin-bottom:1.5rem;">
+            <div class="metric-card">
+              <h4>Total Drivers</h4>
+              <div class="value-row">
+                <p id="drvStatTotal">0</p><i class="fa-solid fa-id-card icon-blue"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Active</h4>
+              <div class="value-row">
+                <p id="drvStatActive">0</p><i class="fa-solid fa-circle-check icon-green"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Assigned to Truck</h4>
+              <div class="value-row">
+                <p id="drvStatAssigned">0</p><i class="fa-solid fa-truck icon-orange"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Total Salary / mo</h4>
+              <div class="value-row">
+                <p id="drvStatSalary">₹0</p><i class="fa-solid fa-indian-rupee-sign icon-purple"></i>
+              </div>
+            </div>
+          </section>
+
+          <section class="tables">
+            <div class="table-header">
+              <h3><i class="fa-solid fa-id-card" style="color:var(--primary);margin-right:0.5rem;"></i>Driver Roster
+              </h3>
+              <button class="btn-primary"
+                onclick="resetDriverForm(); document.getElementById('driverForm').style.display='block'; document.getElementById('driverForm').scrollIntoView({behavior:'smooth'});">
+                <i class="fa-solid fa-plus"></i> Add Driver
+              </button>
+            </div>
+
+            <!-- Add/Edit Driver Form -->
+            <div id="driverForm" class="form-panel" style="display:none">
+              <div
+                style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-color);">
+                <i class="fa-solid fa-user-plus" style="color:var(--primary);font-size:1.1rem;"></i>
+                <h4 style="margin:0;font-size:1rem;" id="driverFormTitle">Add New Driver</h4>
+              </div>
+              <form onsubmit="submitDriver(event)">
+                <input type="hidden" id="drvId">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-user"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Full Name *</label>
+                    <input type="text" id="drvName" placeholder="e.g. Ramesh Singh" required>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-phone"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Phone</label>
+                    <input type="text" id="drvPhone" placeholder="e.g. 9876543210">
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-location-dot"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Address</label>
+                    <input type="text" id="drvAddress" placeholder="City, State">
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-indian-rupee-sign"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Monthly Salary
+                      (₹)</label>
+                    <input type="number" id="drvSalary" value="0" min="0" placeholder="e.g. 15000">
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+                  <button type="button" class="btn-secondary" onclick="cancelForm('driverForm')"><i
+                      class="fa-solid fa-xmark"></i> Cancel</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>Driver</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                    <th>Monthly Salary
+                      <button type="button" title="Sort ascending" onclick="toggleDriverSort('salary')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                        <i id="drvSortSalary" class="fa-solid fa-sort"></i>
+                      </button>
+                    </th>
+                    <th>Assigned Truck</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="driversTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== CUSTOMERS VIEW ===== -->
+        <div id="view-customers" class="view-section" style="display:none">
+
+          <!-- Customer Stat Cards -->
+          <section class="metrics" style="margin-bottom:1.5rem;">
+            <div class="metric-card">
+              <h4>Total Customers</h4>
+              <div class="value-row">
+                <p id="custStatTotal">0</p><i class="fa-solid fa-users icon-blue"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Total Billed (Trips)</h4>
+              <div class="value-row">
+                <p id="custStatBilled">₹0</p><i class="fa-solid fa-file-invoice icon-blue"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Total Received</h4>
+              <div class="value-row">
+                <p id="custStatPaid">₹0</p><i class="fa-solid fa-circle-check icon-green"></i>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <h4>Net (Extra / Owed)</h4>
+              <div class="value-row">
+                <p id="custStatNet">₹0</p><i class="fa-solid fa-scale-balanced icon-orange"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Total Trips</h4>
+              <div class="value-row">
+                <p id="custStatTrips">0</p><i class="fa-solid fa-route icon-purple"></i>
+              </div>
+            </div>
+          </section>
+
+          <section class="tables customer-insights-section" style="margin-bottom:1.5rem;">
+            <div class="table-header" style="margin-bottom:1rem;">
+              <h3><i class="fa-solid fa-chart-line" style="color:var(--primary);margin-right:0.5rem;"></i>Customer
+                Account Visibility</h3>
+            </div>
+            <div class="customer-insight-metrics"
+              style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1rem;">
+              <div class="metric-card">
+                <h4>Paid Customers</h4>
+                <div class="value-row">
+                  <p id="custInsightPaidCount">0</p><i class="fa-solid fa-circle-check icon-green"></i>
+                </div>
+              </div>
+              <div class="metric-card">
+                <h4>Overdue Customers</h4>
+                <div class="value-row">
+                  <p id="custInsightOverdueCount">0</p><i class="fa-solid fa-triangle-exclamation icon-yellow"></i>
+                </div>
+              </div>
+              <div class="metric-card">
+                <h4>Total Current Due</h4>
+                <div class="value-row">
+                  <p id="custInsightCurrentDue">₹0</p><i class="fa-solid fa-wallet icon-red"></i>
+                </div>
+              </div>
+            </div>
+            <div class="customer-lists-grid"
+              style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;">
+              <div class="table-responsive customer-insight-card"
+                style="padding:1rem;border:1px solid var(--border-color);border-radius:14px;background:var(--bg-panel);">
+                <h4 style="margin:0 0 0.75rem 0;">Top Paying Customers</h4>
+                <div id="custTopPayingList" style="display:grid;gap:0.65rem;"></div>
+              </div>
+              <div class="table-responsive customer-insight-card"
+                style="padding:1rem;border:1px solid var(--border-color);border-radius:14px;background:var(--bg-panel);">
+                <h4 style="margin:0 0 0.75rem 0;">Highest Pending Dues</h4>
+                <div id="custHighestDueList" style="display:grid;gap:0.65rem;"></div>
+              </div>
+              <div class="table-responsive customer-insight-card"
+                style="padding:1rem;border:1px solid var(--border-color);border-radius:14px;background:var(--bg-panel);">
+                <h4 style="margin:0 0 0.75rem 0;">Inactive Customers</h4>
+                <div id="custInactiveList" style="display:grid;gap:0.65rem;"></div>
+              </div>
+            </div>
+            <div class="table-responsive customer-billing-panel"
+              style="margin-top:1rem;padding:1rem;border:1px solid var(--border-color);border-radius:14px;background:var(--bg-panel);">
+              <h4 style="margin:0 0 0.75rem 0;">Monthly Billing Trend Snapshot</h4>
+              <div id="custBillingTrendList" style="display:grid;gap:0.75rem;"></div>
+            </div>
+          </section>
+
+          <section class="tables">
+            <div class="table-header custom-header-stack"
+              style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+              <h3 style="margin:0; white-space:nowrap; width:100%; font-size:1.5rem;"><i class="fa-solid fa-users"
+                  style="color:var(--primary);margin-right:0.5rem;"></i>Customer Directory</h3>
+              <div class="customer-directory-actions" style="display:flex;gap:0.5rem; width:100%;">
+                <button class="btn-secondary flex-1" id="custTabActive" onclick="showCustomerTab('active')"
+                  style="border-color:var(--primary);color:var(--primary);"><i class="fa-solid fa-users"></i>
+                  Active</button>
+                <button class="btn-secondary flex-1" id="custTabHistory" onclick="showCustomerTab('history')"><i
+                    class="fa-solid fa-clock-rotate-left"></i> History</button>
+                <button class="btn-primary flex-1" id="custAddBtn"
+                  onclick="resetCustomerForm(); document.getElementById('customerForm').style.display='block'; document.getElementById('customerForm').scrollIntoView({behavior:'smooth'});"><i
+                    class="fa-solid fa-plus"></i> New</button>
+              </div>
+            </div>
+
+            <!-- Add/Edit Form -->
+            <div id="customerForm" class="form-panel" style="display:none">
+              <div
+                style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-color);">
+                <i class="fa-solid fa-user-plus" style="color:var(--primary);font-size:1.1rem;"></i>
+                <h4 style="margin:0;font-size:1rem;" id="customerFormTitle">Add New Customer</h4>
+              </div>
+              <form onsubmit="submitCustomer(event)">
+                <input type="hidden" id="custId">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-user"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Customer Name
+                      *</label>
+                    <input type="text" id="custName" placeholder="e.g. ASHISH KUMAR" required>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-phone"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Phone</label>
+                    <input type="text" id="custPhone" placeholder="e.g. 9876543210">
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-location-dot"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Address</label>
+                    <input type="text" id="custAddress" placeholder="City, State">
+                  </div>
+                  <div class="form-group" id="custAmountPaidWrap">
+                    <label><i class="fa-solid fa-circle-check"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Amount Received (₹)
+                      <small style="color:var(--text-muted);font-weight:400;">— money customer paid you</small></label>
+                    <input type="number" id="custAmountPaid" value="0" min="0" placeholder="e.g. 50000">
+                    <small id="custAmountPaidHint"
+                      style="display:block;margin-top:0.45rem;color:var(--text-muted);font-size:0.78rem;">Only for first
+                      entry. Later payments can be added from the customer row.</small>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-regular fa-calendar"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Due Date</label>
+                    <input type="date" id="custDueDate">
+                  </div>
+                  <div class="form-group" style="grid-column:1 / -1">
+                    <label><i class="fa-solid fa-note-sticky"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Follow-up Reminder
+                      Notes</label>
+                    <textarea id="custFollowUpNotes" rows="3"
+                      placeholder="Call on Monday, cheque promised, waiting for bank confirmation..."></textarea>
+                  </div>
+                  <div class="form-group"
+                    style="background:rgba(255,255,255,0.03);border:1px dashed var(--border-color);border-radius:8px;padding:0.75rem;">
+                    <label style="color:var(--text-muted);font-size:0.82rem;"><i class="fa-solid fa-info-circle"
+                        style="margin-right:0.3rem;"></i>Total Billed is auto-calculated from trips amount.</label>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+                  <button type="button" class="btn-secondary" onclick="cancelForm('customerForm')"><i
+                      class="fa-solid fa-xmark"></i> Cancel</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Active Customers Table -->
+            <div id="custPanelActive">
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Customer</th>
+                      <th>Total Billed
+                        <button type="button" title="Sort ascending" onclick="toggleCustomerSort('total_billed')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                          <i id="custSortBilled" class="fa-solid fa-sort"></i>
+                        </button>
+                      </th>
+                      <th>Total Received
+                        <button type="button" title="Sort ascending" onclick="toggleCustomerSort('amount_paid')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                          <i id="custSortReceived" class="fa-solid fa-sort"></i>
+                        </button>
+                      </th>
+                      <th>Current Due / Advance</th>
+                      <th>Status</th>
+                      <th>Due Date
+                        <button type="button" title="Sort ascending" onclick="toggleCustomerSort('due_date')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                          <i id="custSortDueDate" class="fa-solid fa-sort"></i>
+                        </button>
+                      </th>
+                      <th>Follow-up</th>
+                      <th>Age Bucket</th>
+                      <th>Trips
+                        <button type="button" title="Sort ascending" onclick="toggleCustomerSort('total_trips')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                          <i id="custSortTrips" class="fa-solid fa-sort"></i>
+                        </button>
+                      </th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="customersTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Customer History Table -->
+            <div id="custPanelHistory" style="display:none">
+              <div class="search-filters" style="margin-bottom:1rem;">
+                <div class="filter-group">
+                  <label>Sort History</label>
+                  <select id="customerHistorySort" onchange="loadCustomerHistoryTab()">
+                    <option value="date_desc">Date: Newest First</option>
+                    <option value="date_asc">Date: Oldest First</option>
+                    <option value="name_asc">Name: A to Z</option>
+                    <option value="name_desc">Name: Z to A</option>
+                  </select>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Name</th>
+                      <th>Phone</th>
+                      <th>Last Trip</th>
+                      <th>Total Trips</th>
+                      <th>Total Quantity (Tons)</th>
+                      <th>Total Revenue</th>
+                      <th>Status</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody id="customerHistoryTableBody">
+                    <tr>
+                      <td colspan="8" class="empty">Loading...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </section>
+        </div>
+
+        <!-- ===== TRIPS VIEW ===== -->
+        <div id="view-trips" class="view-section" style="display:none">
+          <section class="tables">
+            <div class="table-header"
+              style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+              <h3 style="margin:0;">Trips</h3>
+              <div style="display:flex;gap:0.75rem;align-items:center;">
+
+                <div class="dropdown" style="position:relative;">
+                  <button class="btn-secondary dropdown-toggle"
+                    onclick="document.getElementById('tripsExportDropdown').classList.toggle('show');"
+                    style="padding:0.6rem 1rem;"><i class="fa-solid fa-download"></i> <span
+                      class="hide-mobile">Export</span></button>
+                  <div id="tripsExportDropdown" class="dropdown-menu">
+                    <button class="dropdown-item" onclick="exportTripsPDF()"><i class="fa-solid fa-file-pdf"
+                        style="color:#ef4444;"></i> Trips PDF</button>
+                    <button class="dropdown-item" onclick="exportTripsExcel()"><i class="fa-solid fa-file-excel"
+                        style="color:#22c55e;"></i> Trips Excel</button>
+                    <button class="dropdown-item" onclick="exportDailyRevenuePdf()"><i class="fa-solid fa-calendar-day"
+                        style="color:#3b82f6;"></i> Daily Billed (PDF)</button>
+                    <button class="dropdown-item" onclick="exportMonthlyRevenuePdf()"><i
+                        class="fa-solid fa-calendar-days" style="color:#8b5cf6;"></i> Monthly Billed (PDF)</button>
+                  </div>
+                </div>
+
+                <button class="btn-primary"
+                  onclick="resetTripForm(); document.getElementById('tripForm').style.display='block';"
+                  style="padding:0.6rem 1rem;"><i class="fa-solid fa-plus"></i> Add Trip</button>
+              </div>
+            </div>
+            <div id="tripForm" class="form-panel" style="display:none">
+              <form onsubmit="submitTrip(event)">
+                <input type="hidden" id="trpId">
+                <div class="form-grid">
+                  <div class="form-group"><label>Truck</label><select id="trpTruck">
+                      <option value="">-- None --</option>
+                    </select></div>
+                  <div class="form-group"><label>Driver</label><select id="trpDriver">
+                      <option value="">-- None --</option>
+                    </select></div>
+                  <div class="form-group"><label>Customer</label><select id="trpCustomer">
+                      <option value="">-- None --</option>
+                    </select></div>
+                  <div class="form-group"><label>Amount (₹)</label><input type="number" id="trpAmount" value="0"
+                      min="0"></div>
+                  <div class="form-group"><label>Material Type</label><input type="text" id="trpMaterial"
+                      placeholder="e.g. Sand, Cement, Bricks"></div>
+                  <div class="form-group"><label>Quantity (Tons)</label><input type="number" id="trpQuantity"
+                      step="0.01" value="0" min="0"></div>
+
+                  <div class="form-group"><label>Status</label>
+                    <select id="trpStatus">
+                      <option value="pending">Pending</option>
+                      <option value="ongoing">Ongoing</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                  <div class="form-group"><label>Trip Date *</label><input type="date" id="trpDate" required></div>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn-primary">Save</button>
+                  <button type="button" class="btn-secondary" onclick="cancelForm('tripForm')">Cancel</button>
+                </div>
+              </form>
+            </div>
+            <!-- Search Filters -->
+            <div class="search-filters">
+              <div class="filter-group"><label>Customer</label><select id="tripFilterCustomer">
+                  <option value="">All</option>
+                </select></div>
+              <div class="filter-group"><label>Driver</label><select id="tripFilterDriver">
+                  <option value="">All Drivers</option>
+                </select></div>
+              <div class="filter-group"><label>Truck Number</label><input type="text" id="tripFilterTruck"
+                  placeholder="PB10..."></div>
+              <div class="filter-group"><label>Date</label><input type="date" id="tripFilterDate"></div>
+              <div class="filter-group"><label>Status</label>
+                <select id="tripFilterStatus">
+                  <option value="">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="ongoing">Ongoing</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div class="filter-group"><label>Page Size</label>
+                <select id="tripPageSize" onchange="applyTripFilters()">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+              <div class="filter-group align-bottom"><button class="btn-secondary"
+                  onclick="applyTripFilters()">Search</button></div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table" id="tripsTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Material</th>
+                    <th>Qty (Tons)
+                      <button type="button" title="Sort ascending" onclick="toggleTripSort('quantity')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                        <i id="tripSortQty" class="fa-solid fa-sort"></i>
+                      </button>
+                    </th>
+                    <th>Truck</th>
+                    <th>Driver</th>
+                    <th>Customer</th>
+                    <th>Date
+                      <button type="button" title="Sort ascending" onclick="toggleTripSort('trip_date')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                        <i id="tripSortDate" class="fa-solid fa-sort"></i>
+                      </button>
+                    </th>
+                    <th>Amount (₹)</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+
+
+
+                <tbody id="tripsTableBody"></tbody>
+              </table>
+            </div>
+            <div class="pagination">
+              <span class="page-info" id="tripPageInfo">Page 1 of 1</span>
+              <div class="page-buttons">
+                <button class="btn-secondary" id="tripPrevBtn" onclick="changeTripPage(-1)">Previous</button>
+                <button class="btn-secondary" id="tripNextBtn" onclick="changeTripPage(1)">Next</button>
+              </div>
+            </div>
+          </section>
+        </div>
+        <!-- ===== FUEL VIEW ===== -->
+        <div id="view-fuel" class="view-section" style="display:none">
+
+          <!-- Fuel Tabs Navigation -->
+          <div class="tabs-container"
+            style="display:flex; gap:1.5rem; border-bottom:1px solid var(--border-color); margin-bottom:1.5rem; padding-bottom:0px;">
+            <button class="tab-btn active" id="tabFuelRecordsBtn" onclick="switchFuelTab('records')"
+              style="border:none;background:none;font-weight:600;color:var(--primary);cursor:pointer;font-size:1rem;border-bottom:2px solid var(--primary);padding-bottom:0.75rem;transition:all 0.2s;"><i
+                class="fa-solid fa-list" style="margin-right:0.4rem;"></i>Fuel Records</button>
+            <button class="tab-btn" id="tabFuelEfficiencyBtn" onclick="switchFuelTab('efficiency')"
+              style="border:none;background:none;font-weight:600;color:var(--text-muted);cursor:pointer;font-size:1rem;border-bottom:2px solid transparent;padding-bottom:0.75rem;transition:all 0.2s;"><i
+                class="fa-solid fa-leaf" style="margin-right:0.4rem;"></i>Efficiency Analytics</button>
+          </div>
+
+          <!-- TAB CONTENT: FUEL RECORDS -->
+          <div id="fuelTabRecords" style="display:block;">
+            <!-- Fuel Summary Cards -->
+            <section class="metrics" id="fuelMetricsRow" style="margin-bottom:1.5rem;">
+              <div class="metric-card">
+                <h4>Total Liters</h4>
+                <div class="value-row">
+                  <p id="fuelStatLiters">0 L</p><i class="fa-solid fa-droplet icon-blue"></i>
+                </div>
+              </div>
+              <div class="metric-card">
+                <h4>Total Fuel Cost</h4>
+                <div class="value-row">
+                  <p id="fuelStatCost">₹0</p><i class="fa-solid fa-indian-rupee-sign icon-red"></i>
+                </div>
+              </div>
+              <div class="metric-card">
+                <h4>This Month</h4>
+                <div class="value-row">
+                  <p id="fuelStatMonth">₹0</p><i class="fa-solid fa-calendar icon-orange"></i>
+                </div>
+              </div>
+              <div class="metric-card">
+                <h4>Total Records</h4>
+                <div class="value-row">
+                  <p id="fuelStatRecords">0</p><i class="fa-solid fa-list icon-cyan"></i>
+                </div>
+              </div>
+            </section>
+
+            <!-- Fuel Records Section -->
+            <section class="tables">
+              <div class="table-header">
+                <h3><i class="fa-solid fa-gas-pump" style="color:var(--primary);margin-right:0.5rem;"></i>Fuel Records
+                </h3>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                  <button class="btn-secondary" style="padding:0.4rem 0.8rem;font-size:0.85rem;"
+                    onclick="exportFuelExcel()"><i class="fa-solid fa-file-excel" style="color:#22c55e;"></i> Export
+                    Excel</button>
+                  <button class="btn-primary"
+                    onclick="resetFuelForm(); document.getElementById('fuelForm').style.display='block'; document.getElementById('fuelForm').scrollIntoView({behavior:'smooth'});">
+                    <i class="fa-solid fa-plus"></i> Log Fuel
+                  </button>
+                </div>
+              </div>
+
+              <!-- Add Fuel Form -->
+              <div id="fuelForm" class="form-panel" style="display:none">
+                <div
+                  style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-color);">
+                  <i class="fa-solid fa-gas-pump" style="color:var(--primary);font-size:1.1rem;"></i>
+                  <h4 style="margin:0;font-size:1rem;">Log Fuel Entry</h4>
+                </div>
+                <form onsubmit="submitFuel(event)">
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label><i class="fa-solid fa-truck"
+                          style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Truck</label>
+                      <select id="fuelTruck">
+                        <option value="">-- None --</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label><i class="fa-solid fa-id-card"
+                          style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Driver</label>
+                      <select id="fuelDriver">
+                        <option value="">-- None --</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label><i class="fa-solid fa-droplet"
+                          style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Liters *</label>
+                      <input type="number" id="fuelLiters" step="0.01" placeholder="e.g. 50.5" required>
+                    </div>
+                    <div class="form-group">
+                      <label><i class="fa-solid fa-indian-rupee-sign"
+                          style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Price (₹) *</label>
+                      <input type="number" id="fuelPrice" step="0.01" placeholder="e.g. 4500" required>
+                    </div>
+                    <div class="form-group">
+                      <label><i class="fa-regular fa-calendar"
+                          style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Date *</label>
+                      <input type="date" id="fuelDate" required>
+                    </div>
+                  </div>
+                  <div class="form-actions">
+                    <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save
+                      Record</button>
+                    <button type="button" class="btn-secondary" onclick="cancelForm('fuelForm')"><i
+                        class="fa-solid fa-xmark"></i> Cancel</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Filters -->
+              <div class="search-filters" style="margin-bottom:1rem;">
+                <div class="filter-group">
+                  <label>Driver</label>
+                  <select id="fuelFilterDriver" onchange="applyFuelFilters()">
+                    <option value="">All Drivers</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label>Truck Number</label>
+                  <select id="fuelFilterTruck" onchange="applyFuelFilters()">
+                    <option value="">All Trucks</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label>Date</label>
+                  <input type="date" id="fuelFilterDate" onchange="applyFuelFilters()">
+                </div>
+                <div class="filter-group">
+                  <label>Page Size</label>
+                  <select id="fuelPageSize" data-plain onchange="applyFuelFilters()">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                  </select>
+                </div>
+                <div class="filter-group align-bottom">
+                  <button class="btn-secondary" onclick="clearFuelFilters()"><i class="fa-solid fa-rotate-left"></i>
+                    Clear</button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Truck</th>
+                      <th>Driver</th>
+                      <th>Fuel Volume
+                        <button type="button" title="Sort ascending" onclick="toggleFuelSort('liters')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                          <i id="fuelSortVolume" class="fa-solid fa-sort"></i>
+                        </button>
+                      </th>
+                      <th>Rate (₹/L)
+                        <button type="button" title="Sort ascending" onclick="toggleFuelSort('rate')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                          <i id="fuelSortRate" class="fa-solid fa-sort"></i>
+                        </button>
+                      </th>
+                      <th>Total Cost
+                        <button type="button" title="Sort ascending" onclick="toggleFuelSort('price')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                          <i id="fuelSortCost" class="fa-solid fa-sort"></i>
+                        </button>
+                      </th>
+                      <th>Date
+                        <button type="button" title="Sort ascending" onclick="toggleFuelSort('fuel_date')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                          <i id="fuelSortDate" class="fa-solid fa-sort"></i>
+                        </button>
+                      </th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="fuelTableBody"></tbody>
+                </table>
+              </div>
+              <div class="pagination">
+                <span class="page-info" id="fuelPageInfo">Page 1 of 1</span>
+                <div class="page-buttons">
+                  <button class="btn-secondary" id="fuelPrevBtn" onclick="changeFuelPage(-1)">Previous</button>
+                  <button class="btn-secondary" id="fuelNextBtn" onclick="changeFuelPage(1)">Next</button>
+                </div>
+              </div>
+            </section>
+          </div> <!-- End of fuelTabRecords -->
+
+          <!-- TAB CONTENT: EFFICIENCY -->
+          <div id="fuelTabEfficiency" style="display:none;">
+            <!-- Efficiency Stats and Charts Merged from Efficiency View -->
+            <section class="charts" style="margin-bottom:1.5rem;">
+              <div class="chart-container">
+                <h4><i class="fa-solid fa-chart-line" style="color:var(--primary);margin-right:0.5rem;"></i>Fuel Cost
+                  Trends (6 Months)</h4>
+                <div class="canvas-wrap"><canvas id="efficiencyCostChart"></canvas></div>
+              </div>
+            </section>
+
+            <section class="tables" style="margin-bottom:2rem;">
+              <div class="table-header">
+                <h3><i class="fa-solid fa-leaf" style="color:var(--success);margin-right:0.5rem;"></i>Fuel Efficiency
+                  per Truck</h3>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Truck</th>
+                      <th>Total Refuels</th>
+                      <th>Total Fuel (L)</th>
+                      <th>Total Fuel Cost (₹)</th>
+                      <th>Avg Cost / L</th>
+                    </tr>
+                  </thead>
+                  <tbody id="efficiencyTableBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+        </div>
+
+        <!-- ===== REPORTS VIEW ===== -->
+        <div id="view-reports" class="view-section" style="display:none">
+          <section class="tables">
+            <div class="table-header">
+              <h3>Export Reports</h3>
+            </div>
+
+            <!-- Trips Reports -->
+            <div style="margin:0 0 0.75rem;padding:0.4rem 0;border-bottom:1px solid var(--border-color);">
+              <h4
+                style="font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin:0;">
+                <i class="fa-solid fa-route" style="margin-right:0.4rem;color:var(--primary);"></i>Trip Reports
+              </h4>
+            </div>
+            <div class="export-actions">
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                <h4>Trips PDF</h4>
+                <p>Full trip details with fuel cost &amp; revenue.</p><button class="btn-danger"
+                  onclick="exportTripsPDF()">Export PDF</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-file-excel"></i></div>
+                <h4>Trips Excel</h4>
+                <p>Structured trip data for further analysis.</p><button class="btn-success"
+                  onclick="exportTripsExcel()">Export Excel</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-gas-pump"></i></div>
+                <h4>Fuel Excel</h4>
+                <p>Fuel expense records per truck.</p><button class="btn-success" onclick="exportFuelExcel()">Export
+                  Excel</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-wallet"></i></div>
+                <h4>Customer Outstanding</h4>
+                <p>Current due balances by customer.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/reports/customer-outstanding','Customer Outstanding Report')">View</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-book"></i></div>
+                <h4>Customer Ledger</h4>
+                <p>Ledger summary by customer account.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/reports/customer-ledger','Customer Ledger Report')">View</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-truck-fast"></i></div>
+                <h4>Truck Profitability</h4>
+                <p>Profit contribution by truck.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/reports/truck-profitability','Truck Profitability Report')">View</button>
+              </div>
+            </div>
+
+            <!-- Revenue Reports -->
+            <div style="margin:1.5rem 0 0.75rem;padding:0.4rem 0;border-bottom:1px solid var(--border-color);">
+              <h4
+                style="font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin:0;">
+                <i class="fa-solid fa-chart-bar" style="margin-right:0.4rem;color:var(--primary);"></i>Revenue Reports
+              </h4>
+            </div>
+            <div class="export-actions">
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-calendar-day"></i></div>
+                <h4>Daily Revenue PDF</h4>
+                <p>Day-by-day revenue breakdown (last 90 days).</p><button class="btn-danger"
+                  onclick="exportDailyRevenuePDF()">Export PDF</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-chart-bar"></i></div>
+                <h4>Monthly Revenue PDF</h4>
+                <p>Month-by-month revenue summary report.</p><button class="btn-danger"
+                  onclick="exportRevenuePDF()">Export PDF</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <h4>Trip Profitability</h4>
+                <p>Profit performance by trip bill.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/analytics/trip-profitability','Trip Profitability Report')">View</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
+                <h4>Daily Collection</h4>
+                <p>Collection totals by day.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/reports/collection/daily','Daily Collection Report')">View</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                <h4>Monthly Collection</h4>
+                <p>Collection totals by month.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/reports/collection/monthly','Monthly Collection Report')">View</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-file-lines"></i></div>
+                <h4>Business Summary</h4>
+                <p>Monthly business snapshot.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/reports/business-summary','Monthly Business Summary')">View</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-gauge-high"></i></div>
+                <h4>Driver Performance</h4>
+                <p>Trips and revenue by driver.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/reports/driver-performance','Driver Performance Report')">View</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-gas-pump"></i></div>
+                <h4>Fuel Consumption</h4>
+                <p>Fuel liters and cost trends.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/reports/fuel-consumption','Fuel Consumption Report')">View</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                <h4>Maintenance Expense</h4>
+                <p>Service cost by truck and month.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/reports/maintenance-expense','Maintenance Expense Report')">View</button>
+              </div>
+              <div class="export-card">
+                <div class="export-icon"><i class="fa-solid fa-id-card-clip"></i></div>
+                <h4>Document Expiry</h4>
+                <p>Placeholder until document schema is added.</p><button class="btn-secondary"
+                  onclick="openJsonReport('/api/reports/document-expiry','Document Expiry Report')">View</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== PERFORMANCE VIEW ===== -->
+        <div id="view-performance" class="view-section" style="display:none">
+          <section class="tables">
+            <div class="table-header">
+              <h3>Driver Performance Dashboard</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Driver Name</th>
+                    <th>Total Trips</th>
+                    <th>Total Fuel (L)</th>
+                    <th>Revenue Generated (₹)</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody id="performanceTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== MAINTENANCE VIEW ===== -->
+        <div id="view-maintenance" class="view-section" style="display:none">
+
+          <!-- Maintenance Stat Cards -->
+          <section class="metrics" style="margin-bottom:1.5rem;">
+            <div class="metric-card">
+              <h4>Total Services</h4>
+              <div class="value-row">
+                <p id="mtnStatTotal">0</p><i class="fa-solid fa-screwdriver-wrench icon-blue"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Total Cost</h4>
+              <div class="value-row">
+                <p id="mtnStatCost">₹0</p><i class="fa-solid fa-indian-rupee-sign icon-red"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>This Month</h4>
+              <div class="value-row">
+                <p id="mtnStatMonth">₹0</p><i class="fa-solid fa-calendar icon-orange"></i>
+              </div>
+            </div>
+            <div class="metric-card">
+              <h4>Pending Services</h4>
+              <div class="value-row">
+                <p id="mtnStatPending">0</p><i class="fa-solid fa-triangle-exclamation icon-yellow"></i>
+              </div>
+            </div>
+          </section>
+
+          <section class="tables">
+            <div class="table-header">
+              <h3><i class="fa-solid fa-wrench" style="color:var(--primary);margin-right:0.5rem;"></i>Maintenance Log
+              </h3>
+              <button class="btn-primary"
+                onclick="resetMaintenanceForm(); document.getElementById('maintenanceForm').style.display='block'; document.getElementById('maintenanceForm').scrollIntoView({behavior:'smooth'});">
+                <i class="fa-solid fa-plus"></i> Log Service
+              </button>
+            </div>
+
+            <!-- Pending Maintenance Banner -->
+            <div id="pendingMaintenanceBanner"
+              style="display:none;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.35);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem;">
+            </div>
+
+            <!-- Add/Edit Form -->
+            <div id="maintenanceForm" class="form-panel" style="display:none">
+              <div
+                style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-color);">
+                <i class="fa-solid fa-wrench" style="color:var(--primary);font-size:1.1rem;"></i>
+                <h4 style="margin:0;font-size:1rem;">Log Maintenance Service</h4>
+              </div>
+              <form onsubmit="submitMaintenance(event)">
+                <input type="hidden" id="mtnId">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-truck"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Truck *</label>
+                    <select id="mtnTruck" required>
+                      <option value="">-- Select Truck --</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-screwdriver-wrench"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Service Type *</label>
+                    <select id="mtnServiceType" required onchange="prefillMtnDesc()">
+                      <option value="">-- Select Service --</option>
+                      <option value="Oil Change">Oil Change</option>
+                      <option value="Tyre Replacement">Tyre Replacement</option>
+                      <option value="Tyre Puncture Fix">Tyre Puncture Fix</option>
+                      <option value="Brake Service">Brake Service</option>
+                      <option value="Engine Repair">Engine Repair</option>
+                      <option value="Battery Replacement">Battery Replacement</option>
+                      <option value="Clutch Repair">Clutch Repair</option>
+                      <option value="Gear Box Repair">Gear Box Repair</option>
+                      <option value="Suspension Repair">Suspension Repair</option>
+                      <option value="AC Repair">AC Repair</option>
+                      <option value="Electrical Work">Electrical Work</option>
+                      <option value="Body Work / Denting">Body Work / Denting</option>
+                      <option value="Full Service">Full Service</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-regular fa-calendar"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Service Date *</label>
+                    <input type="date" id="mtnDate" required>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-indian-rupee-sign"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Cost (₹) *</label>
+                    <input type="number" id="mtnCost" step="0.01" placeholder="e.g. 3500" required>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-file-invoice" style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Proof / Bill</label>
+                    <input type="file" id="mtnProof" accept=".jpg,.jpeg,.png,.pdf" style="padding:0.4rem; font-size: 0.85rem;">
+                  </div>
+                  <div class="form-group" style="grid-column: 1 / -1">
+                    <label><i class="fa-solid fa-note-sticky"
+                        style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Additional
+                      Notes</label>
+                    <input type="text" id="mtnDesc" placeholder="Any extra details about the service…">
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Record</button>
+                  <button type="button" class="btn-secondary" onclick="cancelForm('maintenanceForm')"><i
+                      class="fa-solid fa-xmark"></i> Cancel</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>Truck
+                      <button type="button" title="Sort ascending" onclick="toggleMaintenanceSort('truck_no')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                        <i id="mtnSortTruck" class="fa-solid fa-sort"></i>
+                      </button>
+                    </th>
+                    <th>Service Type</th>
+                    <th>Notes</th>
+                    <th>Service Date
+                      <button type="button" title="Sort ascending" onclick="toggleMaintenanceSort('service_date')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
+                        <i id="mtnSortServiceDate" class="fa-solid fa-sort"></i>
+                      </button>
+                    </th>
+                    <th>Cost</th>
+                    <th>Proof</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="maintenanceTableBody"></tbody>
+              </table>
+            </div>
+            <div class="pagination">
+              <span class="page-info" id="mtnPageInfo">Page 1 of 1</span>
+              <div class="page-buttons">
+                <button class="btn-secondary" id="mtnPrevBtn" onclick="changeMaintenancePage(-1)">Previous</button>
+                <button class="btn-secondary" id="mtnNextBtn" onclick="changeMaintenancePage(1)">Next</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+      </div>
+
+      <!-- ===== MOBILE BOTTOM NAVIGATION ===== -->
+      <nav class="mobile-bottom-nav" id="mobileBottomNav">
+        <div class="nav-item active" id="botnav-dashboard" onclick="loadDashboard()">
+          <i class="fa-solid fa-house"></i><span>Home</span>
+        </div>
+        <div class="nav-item" id="botnav-trucks" onclick="loadTrucks()">
+          <i class="fa-solid fa-truck"></i><span>Trucks</span>
+        </div>
+        <div class="nav-item" id="botnav-trips" onclick="loadTrips()">
+          <i class="fa-solid fa-route"></i><span>Trips</span>
+        </div>
+        <div class="nav-item" id="botnav-fuel" onclick="loadFuel()">
+          <i class="fa-solid fa-gas-pump"></i><span>Fuel</span>
+        </div>
+        <div class="nav-item" id="botnav-menu" onclick="toggleSidebar()">
+          <i class="fa-solid fa-bars"></i><span>Menu</span>
+        </div>
+      </nav>
+
+  </div>
+  </main>
+  </div>
+
+  <!-- Customer Payment Modal -->
+  <div id="customerPaymentModal" class="modal-overlay" style="display:none">
+    <div class="modal-box" style="max-width:560px;">
+      <button class="close-btn" onclick="closeModal('customerPaymentModal')">&times;</button>
+      <h2 id="custPaymentTitle">Add Payment</h2>
+      <div id="custPaymentSummary" style="margin-bottom:1rem;"></div>
+      <form onsubmit="submitCustomerPayment(event)">
+        <input type="hidden" id="custPaymentCustomerId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Amount Received</label>
+            <input type="number" id="custPaymentAmount" min="0.01" step="0.01" placeholder="e.g. 15000" required>
+          </div>
+          <div class="form-group">
+            <label>Payment Method</label>
+            <select id="custPaymentMethod">
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Cheque">Cheque</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Payment Date</label>
+            <input type="date" id="custPaymentDate" required>
+          </div>
+          <div class="form-group" style="grid-column:1 / -1">
+            <label>Notes</label>
+            <input type="text" id="custPaymentNotes" placeholder="Cash, bank transfer, UPI, part payment...">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Payment</button>
+          <button type="button" class="btn-secondary" onclick="closeModal('customerPaymentModal')"><i
+              class="fa-solid fa-xmark"></i> Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Customer Transactions Modal -->
+  <div id="customerTransactionsModal" class="modal-overlay" style="display:none">
+    <div class="modal-box modal-large"
+      style="max-width:900px;max-height:90vh;display:flex;flex-direction:column;padding:2rem;">
+      <button class="close-btn" onclick="closeModal('customerTransactionsModal')">&times;</button>
+      <div style="flex-shrink:0;padding-right:2rem;">
+        <h2 id="custTxnModalTitle" style="margin-bottom:0.25rem;">Customer Ledger</h2>
+        <div id="custTxnModalSub" style="color:var(--text-muted);font-size:0.875rem;"></div>
+      </div>
+      <div id="custLedgerTrend" style="flex-shrink:0;margin:0.5rem 0 1rem 0;"></div>
+      <div class="table-responsive"
+        style="overflow-y:auto;flex:1;min-height:0;border:1px solid var(--border-color);border-radius:10px;">
+        <table class="data-table">
+          <thead style="position:sticky;top:0;z-index:10;">
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Details</th>
+              <th>Bill</th>
+              <th>Payment</th>
+              <th>Running Due</th>
+            </tr>
+          </thead>
+          <tbody id="custTxnModalBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Trip History Modal -->
+  <div id="customerTripHistoryModal" class="modal-overlay" style="display:none">
+    <div class="modal-box modal-large"
+      style="max-width:950px; max-height: 90vh; display: flex; flex-direction: column; padding: 2rem;">
+      <button class="close-btn" onclick="closeModal('customerTripHistoryModal')">&times;</button>
+      <div style="flex-shrink: 0; padding-right: 2rem;">
+        <h2 id="custHistModalTitle" style="margin-bottom:0.25rem;">Trip History</h2>
+        <p id="custHistModalSub" style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;"></p>
+      </div>
+      <div class="table-responsive"
+        style="overflow-y:auto; flex: 1; min-height: 0; border: 1px solid var(--border-color); border-radius: 10px;">
+        <table class="data-table">
+          <thead style="position: sticky; top: 0; z-index: 10;">
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Trip Bill</th>
+              <th>Material</th>
+              <th>Qty (Tons)</th>
+              <th>Truck</th>
+              <th>Driver</th>
+              <th>Total Billed (₹)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="custHistModalBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="jsonReportModal" class="modal-overlay" style="display:none">
+    <div class="modal-box modal-large"
+      style="max-width:960px;max-height:90vh;display:flex;flex-direction:column;padding:2rem;">
+      <button class="close-btn" onclick="closeModal('jsonReportModal')">&times;</button>
+      <h2 id="jsonReportTitle" style="margin-bottom:0.75rem;">Report</h2>
+      <pre id="jsonReportBody"
+        style="white-space:pre-wrap;overflow:auto;flex:1;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:12px;padding:1rem;font-size:0.85rem;"></pre>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+  <script src="/app.js?v=20"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(err => console.warn('SW register failed:', err));
+      });
+    }
+  </script>
+</body>
+
+</html>
