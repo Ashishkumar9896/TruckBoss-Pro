@@ -42,8 +42,8 @@ Follow these simple steps to set up the project on your new computer.
 Use these details to log in for the first time:
 
 **Option 1: Primary Account**
-- **Email:** `admin@bihal-suppliers.com`
-- **Password:** `Admin@123`
+- **Email:** admin@gmail.com
+- **Password:** Admin@123
 
 > **Note:** Once you log in, you can add more users (Managers or Admins) from the **Settings** menu at the top right.
 

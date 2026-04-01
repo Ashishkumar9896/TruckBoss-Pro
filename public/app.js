@@ -2415,14 +2415,14 @@ async function loadMaintenance() {
       const serviceLabel = m.service_type || serviceType;
       const notesLabel   = m.notes || notes;
       return `<tr>
-        <td class="hide-mobile">${offset + i + 1}</td>
-        <td class="hide-mobile"><span class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);font-weight:600;">
+        <td>${offset + i + 1}</td>
+        <td><span class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);font-weight:600;">
           <i class="fa-solid fa-truck" style="margin-right:4px;font-size:0.7rem;"></i>${esc(m.truck_no || '—')}
         </span></td>
-        <td class="hide-mobile"><span class="status-badge" style="background:rgba(139,92,246,0.1);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);">
+        <td><span class="status-badge" style="background:rgba(139,92,246,0.1);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);">
           <i class="fa-solid fa-screwdriver-wrench" style="margin-right:4px;font-size:0.7rem;"></i>${esc(serviceLabel)}
         </span></td>
-        <td class="hide-mobile" style="color:var(--text-muted);font-size:0.85rem;">${esc(notesLabel)}</td>
+        <td style="color:var(--text-muted);font-size:0.85rem;">${esc(notesLabel)}</td>
         <td><span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--text-muted);">
           <i class="fa-regular fa-calendar" style="font-size:0.75rem;"></i>${fmtDate(m.service_date)}
         </span></td>
