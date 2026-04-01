@@ -35,10 +35,10 @@ function buildTripFilterClause(filters) {
 async function getTrips(filters, limit, offset) {
   const { whereClause, values } = buildTripFilterClause(filters);
   const [rows] = await pool.query(
-    `SELECT tr.trip_id, tr.truck_id, tr.driver_id, tr.customer_id, tr.amount, tr.status, tr.trip_date, tr.material_type, tr.quantity, tr.destination,
+    `SELECT tr.trip_id, tr.truck_id, tr.driver_id, tr.customer_id, tr.manual_customer_name, tr.amount, tr.status, tr.trip_date, tr.material_type, tr.quantity, tr.destination,
             t.truck_no,
             d.name AS driver_name,
-            c.name AS customer_name
+            COALESCE(c.name, tr.manual_customer_name) AS customer_name
      FROM trips tr
      LEFT JOIN truck_details t ON tr.truck_id = t.truck_id
      LEFT JOIN driver_details d ON tr.driver_id = d.driver_id
@@ -64,10 +64,10 @@ async function getTripsCount(filters) {
   return result.totalTrips;
 }
 
-async function createTrip(truckId, driverId, customerId, amount, status, tripDate, materialType = null, quantity = null, destination = null) {
+async function createTrip(truckId, driverId, customerId, amount, status, tripDate, materialType = null, quantity = null, destination = null, manualCustomerName = null) {
   const [result] = await pool.query(
-    "INSERT INTO trips (truck_id, driver_id, customer_id, amount, status, trip_date, material_type, quantity, destination) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [truckId, driverId, customerId, amount, status, tripDate, materialType, quantity, destination]
+    "INSERT INTO trips (truck_id, driver_id, customer_id, amount, status, trip_date, material_type, quantity, destination, manual_customer_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [truckId, driverId, customerId, amount, status, tripDate, materialType, quantity, destination, manualCustomerName]
   );
   return result;
 }
@@ -78,10 +78,10 @@ async function getTripCustomerById(tripId) {
   return rows;
 }
 
-async function updateTrip(id, truckId, driverId, customerId, amount, status, tripDate, materialType = null, quantity = null, destination = null) {
+async function updateTrip(id, truckId, driverId, customerId, amount, status, tripDate, materialType = null, quantity = null, destination = null, manualCustomerName = null) {
   const [result] = await pool.query(
-    "UPDATE trips SET truck_id=?, driver_id=?, customer_id=?, amount=?, status=?, trip_date=?, material_type=?, quantity=?, destination=? WHERE trip_id=?",
-    [truckId, driverId, customerId, amount, status, tripDate, materialType, quantity, destination, id]
+    "UPDATE trips SET truck_id=?, driver_id=?, customer_id=?, amount=?, status=?, trip_date=?, material_type=?, quantity=?, destination=?, manual_customer_name=? WHERE trip_id=?",
+    [truckId, driverId, customerId, amount, status, tripDate, materialType, quantity, destination, manualCustomerName, id]
   );
   return result;
 }

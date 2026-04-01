@@ -43,7 +43,7 @@ Use these details to log in for the first time:
 
 **Option 1: Primary Account**
 - **Email:** admin@gmail.com
-- **Password:** Admin@123
+- **Password:** Admin@1234
 
 > **Note:** Once you log in, you can add more users (Managers or Admins) from the **Settings** menu at the top right.
 

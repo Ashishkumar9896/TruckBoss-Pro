@@ -139,6 +139,30 @@ async function getCustomerById(id) {
   return rows.map(normalizeCustomerRow);
 }
 
+async function getOneTimeCustomers() {
+  const [rows] = await pool.query(
+    `SELECT
+       tr.manual_customer_name AS name,
+       COUNT(tr.trip_id) AS total_trips,
+       COALESCE(SUM(tr.amount), 0) AS total_billed,
+       MAX(tr.trip_date) AS last_trip_date,
+       MIN(tr.trip_date) AS first_trip_date
+     FROM trips tr
+     WHERE tr.manual_customer_name IS NOT NULL AND tr.manual_customer_name != ''
+     GROUP BY tr.manual_customer_name
+     ORDER BY MAX(tr.trip_date) DESC`
+  );
+  
+  return rows.map(row => ({
+    name: row.name,
+    total_trips: Number(row.total_trips || 0),
+    total_billed: Number(row.total_billed || 0),
+    last_trip_date: row.last_trip_date,
+    first_trip_date: row.first_trip_date,
+    is_one_time: true
+  }));
+}
+
 async function createCustomer(name, phoneNo, address, amountPaid, balance, dueDate, followUpNotes) {
   const conn = await pool.getConnection();
   try {
@@ -510,6 +534,7 @@ module.exports = {
   getRevenueChart,
   getCustomers,
   getCustomerById,
+  getOneTimeCustomers,
   createCustomer,
   updateCustomer,
   addCustomerPayment,

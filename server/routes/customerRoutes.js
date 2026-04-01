@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   listCustomers,
+  listOneTimeCustomers,
   getCustomer,
   addCustomer,
   editCustomer,
@@ -18,6 +19,7 @@ const asyncHandler = require("../middleware/asyncHandler");
 const router = express.Router();
 
 router.get("/customers", asyncHandler(listCustomers));
+router.get("/customers/one-time", asyncHandler(listOneTimeCustomers));
 router.get("/customers/insights", asyncHandler(getCustomerInsightsHandler));
 router.get("/customers/history", asyncHandler(listCustomerHistory));
 router.get("/customers/:id", asyncHandler(getCustomer));

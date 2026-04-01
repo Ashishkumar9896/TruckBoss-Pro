@@ -191,6 +191,7 @@ CREATE TABLE `trips` (
   `truck_id` int DEFAULT NULL,
   `driver_id` int DEFAULT NULL,
   `customer_id` int DEFAULT NULL,
+  `manual_customer_name` varchar(255) DEFAULT NULL,
   `amount` decimal(12,2) DEFAULT '0.00',
   `status` enum('completed','ongoing','pending') DEFAULT 'pending',
   `trip_date` date NOT NULL,

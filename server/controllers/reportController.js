@@ -31,9 +31,10 @@ async function fetchTripReportRows(filters = {}) {
 
   const [rows] = await pool.query(
     `SELECT tr.trip_id,
+            tr.manual_customer_name,
             t.truck_no,
             d.name AS driver_name,
-            c.name AS customer_name,
+            COALESCE(c.name, tr.manual_customer_name) AS customer_name,
             tr.material_type,
             tr.quantity,
             tr.trip_date,

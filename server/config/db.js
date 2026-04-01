@@ -41,6 +41,11 @@ const pool = mysql.createPool(poolConfig);
       console.log("Migration: Added quantity to trips table");
     }
 
+    if (!columnNames.includes("manual_customer_name")) {
+      await pool.query("ALTER TABLE trips ADD COLUMN manual_customer_name VARCHAR(255) DEFAULT NULL");
+      console.log("Migration: Added manual_customer_name to trips table");
+    }
+
     const removedTripColumns = ["from_city", "to_city", "toll_amount", "misc_expenses", "freight_amount"];
     const staleTripColumns = removedTripColumns.filter((name) => columnNames.includes(name));
 

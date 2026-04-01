@@ -1,6 +1,7 @@
 const {
   getCustomers,
   getCustomerById,
+  getOneTimeCustomers,
   createCustomer,
   updateCustomer,
   addCustomerPayment,
@@ -19,6 +20,15 @@ const { checkActiveTrips } = require("../models/tripModel");
 async function listCustomers(req, res, next) {
   try {
     const rows = await getCustomers();
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function listOneTimeCustomers(req, res, next) {
+  try {
+    const rows = await getOneTimeCustomers();
     return res.json(rows);
   } catch (err) {
     return next(err);
@@ -188,6 +198,7 @@ async function getCustomerMaterialStatsHandler(req, res, next) {
 
 module.exports = {
   listCustomers,
+  listOneTimeCustomers,
   getCustomer,
   addCustomer,
   editCustomer,

@@ -45,6 +45,12 @@ document.addEventListener("DOMContentLoaded", () => {
     initChoice(sel);
   });
   initDraggableTableScroll();
+  
+  // Add event listener for customer dropdown to toggle one-time customer name field
+  const customerDropdown = document.getElementById('trpCustomer');
+  if (customerDropdown) {
+    customerDropdown.addEventListener('change', toggleOneTimeCustomerField);
+  }
 });
 
 function initDraggableTableScroll() {
@@ -1280,24 +1286,37 @@ async function loadCustomerHistoryTab() {
 
 }
 
-async function showCustomerTripHistory(customerId, name) {
-  document.getElementById('custHistModalTitle').textContent = `${name} — Trip History`;
+async function showCustomerTripHistory(customerId, name, isOneTime = false) {
+  document.getElementById('custHistModalTitle').textContent = `${name} — Trip History${isOneTime ? ' (One-time Customer)' : ''}`;
   const tbody = document.getElementById('custHistModalBody');
   tbody.innerHTML = `<tr><td colspan="8" class="empty">Loading...</td></tr>`;
   openModal('customerTripHistoryModal');
   try {
-    const [trips, stats] = await Promise.all([
-      api(`/api/customers/${customerId}/trips`),
-      api(`/api/customers/${customerId}/material-stats`)
-    ]);
+    let trips = [];
+    let stats = [];
+    
+    if (isOneTime) {
+      // For one-time customers, get all trips and filter by manual_customer_name
+      const allTrips = await api('/api/analytics/trip-profitability?limit=1000&page=1');
+      trips = (allTrips.data || []).filter(t => t.customer_name === name);
+      stats = [];
+    } else {
+      // For regular customers
+      [trips, stats] = await Promise.all([
+        api(`/api/customers/${customerId}/trips`),
+        api(`/api/customers/${customerId}/material-stats`)
+      ]);
+    }
 
     const totalBilled   = trips.reduce((s, t) => s + Number(t.amount||0), 0);
     const totalTripsCount = trips.length;
     const totalQty      = trips.reduce((s, t) => s + Number(t.quantity||0), 0);
 
-    // Fetch customer's amount_received from the customers API
+    // Fetch customer's amount_received from the customers API (only for regular customers)
     let amtReceived = 0;
-    try { const cust = await api(`/api/customers/${customerId}`); amtReceived = Number(cust.amount_paid || 0); } catch(e) {}
+    if (!isOneTime) {
+      try { const cust = await api(`/api/customers/${customerId}`); amtReceived = Number(cust.amount_paid || 0); } catch(e) {}
+    }
     const net = amtReceived - totalBilled;
 
     const netColor = net >= 0 ? '#10b981' : '#ef4444';
@@ -1315,12 +1334,12 @@ async function showCustomerTripHistory(customerId, name) {
     document.getElementById('custHistModalSub').innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin:0.75rem 0;">
         <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:0.75rem;">
-          <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:0.25rem;"><i class="fa-solid fa-file-invoice" style="margin-right:4px;"></i>Total Billed (Trips)</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:0.25rem;"><i class="fa-solid fa-file-invoice" style="margin-right:4px;"></i>Total Billed</div>
           <div style="font-size:1.1rem;font-weight:700;color:#3b82f6;">${fmtCurrency(totalBilled)}</div>
         </div>
         <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:0.75rem;">
-          <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:0.25rem;"><i class="fa-solid fa-circle-check" style="margin-right:4px;"></i>Amount Received</div>
-          <div style="font-size:1.1rem;font-weight:700;color:#10b981;">${fmtCurrency(amtReceived)}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:0.25rem;"><i class="fa-solid fa-circle-check" style="margin-right:4px;"></i>${isOneTime ? 'Total Trips' : 'Amount Received'}</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#10b981;">${isOneTime ? totalTripsCount : fmtCurrency(amtReceived)}</div>
         </div>
         <div style="background:rgba(${net>=0?'16,185,129':'239,68,68'},0.08);border:1px solid rgba(${net>=0?'16,185,129':'239,68,68'},0.2);border-radius:10px;padding:0.75rem;">
           <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:0.25rem;"><i class="fa-solid fa-scale-balanced" style="margin-right:4px;"></i>Net Balance</div>
@@ -1818,7 +1837,10 @@ async function fetchTrips() {
     ]);
     setSelectOpts('trpTruck', trucks.map(t => ({ value: t.truck_id, label: t.truck_no })));
     setSelectOpts('trpDriver', drivers.map(d => ({ value: d.driver_id, label: d.name })));
-    setSelectOpts('trpCustomer', customers.map(c => ({ value: c.customer_id, label: `${c.name} (${c.phone_no || 'N/A'})` })));
+    setSelectOpts('trpCustomer', [
+      ...customers.map(c => ({ value: c.customer_id, label: `${c.name} (${c.phone_no || 'N/A'})` })),
+      { value: 'OTHER', label: 'Other Customer' }
+    ]);
     const currentCustomerFilter = document.getElementById('tripFilterCustomer').value;
     const currentDriverFilter = document.getElementById('tripFilterDriver').value;
     setSelectOpts('tripFilterCustomer', [{value: '', label: 'All'}, ...customers.map(c => ({ value: c.customer_id, label: `${c.name} (${c.phone_no || 'N/A'})` }))]);
@@ -1872,29 +1894,46 @@ async function fetchTrips() {
     if (!appState.trips.rows.length) { tbody.innerHTML = emptyRow(9, 'No trips found'); return; }
 
     const offset = (appState.trips.page - 1) * appState.trips.limit;
-    tbody.innerHTML = appState.trips.rows.map((t, i) => `<tr>
-      <td class="hide-mobile">${offset + i + 1}</td>
-      <td>${esc(t.material_type || '—')}</td>
-      <td>${t.quantity || 0} Tons</td>
-      <td>${esc(t.truck_no || '—')}</td><td>${esc(t.driver_name || '—')}</td><td>${esc(t.customer_name || '—')}</td>
-      <td>${t.destination ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;"><i class="fa-solid fa-location-dot" style="color:var(--danger);font-size:0.75rem;"></i>${esc(t.destination)}</span>` : '<span style="color:var(--text-muted);">—</span>'}</td>
-      <td>${fmtDate(t.trip_date)}</td>
-
-      <td><strong>${fmtCurrency(t.amount || 0)}</strong></td>
-      <td class="actions-cell">
-        <button class="btn-icon" onclick="editTrip(${t.trip_id})"><i class="fa-solid fa-pen"></i></button>
-        <button class="btn-icon btn-icon-danger" onclick="deleteTrip(${t.trip_id})"><i class="fa-solid fa-trash"></i></button>
-      </td></tr>`).join('');
+    tbody.innerHTML = appState.trips.rows.map((t, i) => {
+      const isOneTimeCustomer = !t.customer_id && t.manual_customer_name;
+      const displayName = isOneTimeCustomer 
+        ? `<span style="display:inline-flex;align-items:center;gap:0.5rem;"><span style="background:var(--warning);color:white;padding:0.2rem 0.6rem;border-radius:0.3rem;font-size:0.75rem;font-weight:bold;">ONE-TIME</span>${esc(t.manual_customer_name)}</span>`
+        : esc(t.customer_name || '—');
+      
+      return `<tr>
+        <td class="hide-mobile">${offset + i + 1}</td>
+        <td>${esc(t.material_type || '—')}</td>
+        <td>${t.quantity || 0} Tons</td>
+        <td>${esc(t.truck_no || '—')}</td><td>${esc(t.driver_name || '—')}</td><td>${displayName}</td>
+        <td>${t.destination ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;"><i class="fa-solid fa-location-dot" style="color:var(--danger);font-size:0.75rem;"></i>${esc(t.destination)}</span>` : '<span style="color:var(--text-muted);">—</span>'}</td>
+        <td>${fmtDate(t.trip_date)}</td>
+        <td><strong>${fmtCurrency(t.amount || 0)}</strong></td>
+        <td class="actions-cell">
+          <button class="btn-icon" onclick="editTrip(${t.trip_id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-icon btn-icon-danger" onclick="deleteTrip(${t.trip_id})"><i class="fa-solid fa-trash"></i></button>
+        </td></tr>`;
+    }).join('');
   } catch (err) { tbody.innerHTML = errorRow(9); } finally { hideLoading(tc); }
 }
 
 async function submitTrip(e) {
   e.preventDefault();
   const id = document.getElementById('trpId').value;
+  const customerValue = document.getElementById('trpCustomer').value;
+  const isOneTime = customerValue === 'OTHER';
+  
+  // Validate one-time customer has a name
+  if (isOneTime) {
+    const manualName = document.getElementById('trpManualCustomerName').value.trim();
+    if (!manualName) {
+      showToast('Please enter a customer name for one-time customer', 'error');
+      return;
+    }
+  }
+  
   const body = {
     truck_id: document.getElementById('trpTruck').value || null,
     driver_id: document.getElementById('trpDriver').value || null,
-    customer_id: document.getElementById('trpCustomer').value || null,
     amount: document.getElementById('trpAmount').value,
     material_type: document.getElementById('trpMaterial').value,
     quantity: document.getElementById('trpQuantity').value,
@@ -1902,6 +1941,16 @@ async function submitTrip(e) {
     trip_date: document.getElementById('trpDate').value,
     destination: document.getElementById('trpDestination').value || null
   };
+
+  // Handle customer logic: if other, send manual_customer_name; otherwise send customer_id
+  if (isOneTime) {
+    body.customer_id = null;
+    body.manual_customer_name = document.getElementById('trpManualCustomerName').value.trim();
+  } else {
+    body.customer_id = customerValue || null;
+    body.manual_customer_name = null;
+  }
+
   try {
     if (id) {
       await api(`/api/trips/${id}`, { method: 'PUT', body: JSON.stringify(body) });
@@ -1930,6 +1979,17 @@ function editTrip(id) {
   document.getElementById('trpDate').value = t.trip_date ? t.trip_date.split('T')[0] : '';
   document.getElementById('trpDestination').value = t.destination || '';
 
+  // Determine if this is a one-time customer trip
+  const isOneTime = !t.customer_id && t.manual_customer_name;
+  document.getElementById('trpOneTimeCustomer').checked = isOneTime;
+  toggleOneTimeCustomerField();
+
+  if (isOneTime) {
+    document.getElementById('trpManualCustomerName').value = t.manual_customer_name || '';
+  } else {
+    document.getElementById('trpManualCustomerName').value = '';
+  }
+
   // Choices.js requires setChoiceByValue() — direct .value assignment doesn't update the custom UI
   const setChoice = (id, val) => {
     const inst = choiceInstances[id];
@@ -1938,10 +1998,35 @@ function editTrip(id) {
   };
   setChoice('trpTruck',    t.truck_id    || '');
   setChoice('trpDriver',   t.driver_id   || '');
-  setChoice('trpCustomer', t.customer_id || '');
+  // Set customer dropdown - if no customer_id, set to 'OTHER' for one-time customer
+  if (t.customer_id) {
+    setChoice('trpCustomer', t.customer_id);
+  } else if (t.manual_customer_name) {
+    setChoice('trpCustomer', 'OTHER');
+  } else {
+    setChoice('trpCustomer', '');
+  }
+  // Show/hide manual customer name field based on customer type
+  if (t.manual_customer_name && !t.customer_id) {
+    document.getElementById('trpManualCustomerNameGroup').style.display = 'block';
+  }
 
   document.getElementById('tripForm').style.display = 'block';
   document.getElementById('tripForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Toggle the one-time customer name field visibility
+function toggleOneTimeCustomerField() {
+  const dropdown = document.getElementById('trpCustomer');
+  const field = document.getElementById('trpManualCustomerNameGroup');
+  const isOther = dropdown.value === 'OTHER';
+  
+  if (isOther) {
+    field.style.display = 'block';
+  } else {
+    field.style.display = 'none';
+    document.getElementById('trpManualCustomerName').value = '';
+  }
 }
 
 async function deleteTrip(id) {
@@ -1950,14 +2035,16 @@ async function deleteTrip(id) {
 }
 
 function resetTripForm() {
-  ['trpId', 'trpAmount', 'trpDate', 'trpDestination'].forEach(id => document.getElementById(id).value = '');
+  ['trpId', 'trpAmount', 'trpDate', 'trpDestination', 'trpManualCustomerName'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('trpTruck').value = '';
   document.getElementById('trpDriver').value = '';
   document.getElementById('trpCustomer').value = '';
   document.getElementById('trpMaterial').value = '';
   document.getElementById('trpQuantity').value = '0';
   document.getElementById('trpStatus').value = 'pending';
-
+  
+  // Hide manual customer name field
+  document.getElementById('trpManualCustomerNameGroup').style.display = 'none';
 }
 
 /* ══════════════════════════════════════════
