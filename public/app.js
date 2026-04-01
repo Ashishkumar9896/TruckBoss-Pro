@@ -2505,8 +2505,13 @@ async function submitMaintenance(e) {
   }
 
   try {
-    if (id) { await api(`/api/maintenance/${id}`, { method: 'PUT', body }); showToast('Record updated', 'success'); }
-    else     { await api('/api/maintenance',       { method: 'POST', body }); showToast('Service logged', 'success'); }
+    let result;
+    if (id) { result = await api(`/api/maintenance/${id}`, { method: 'PUT', body }); showToast('Record updated', 'success'); }
+    else     { result = await api('/api/maintenance',       { method: 'POST', body }); showToast('Service logged', 'success'); }
+    // Warn if user selected a file but the server didn't store it
+    if (proofFile && result && result.proof_stored === false) {
+      showToast('⚠️ Record saved, but proof file could not be stored. Check Cloudinary settings.', 'error');
+    }
     cancelForm('maintenanceForm'); resetMaintenanceForm(); loadMaintenance();
   } catch (err) { 
     console.error("Maintenance Submission Error:", err);
