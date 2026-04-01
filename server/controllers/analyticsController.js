@@ -70,6 +70,7 @@ async function fetchTripAnalyticsRows(filters, pagination = {}) {
         COALESCE(tr.amount, 0) AS amount,
         tr.material_type,
         tr.quantity,
+        tr.destination,
         (
           SELECT COALESCE(SUM(price), 0)
           FROM fuel_details f
@@ -164,6 +165,7 @@ async function getTripProfitability(req, res, next) {
         customer_name: r.customer_name,
         material_type: r.material_type,
         quantity: r.quantity,
+        destination: r.destination,
         driver_name: r.driver_name,
         status: r.status,
         amount: baseAmount,

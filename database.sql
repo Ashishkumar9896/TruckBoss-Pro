@@ -198,6 +198,7 @@ CREATE TABLE `trips` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `material_type` varchar(255) DEFAULT NULL,
   `quantity` decimal(12,2) DEFAULT NULL,
+  `destination` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`trip_id`),
   KEY `fk_trip_truck` (`truck_id`),
   KEY `fk_trip_driver` (`driver_id`),
@@ -211,7 +212,7 @@ SET character_set_client = @saved_cs_client;
 
 LOCK TABLES `trips` WRITE;
 ALTER TABLE `trips` DISABLE KEYS;
-INSERT INTO `trips` VALUES (1,2,NULL,1,0.00,'pending','2026-03-25','2026-03-25 16:33:14','',0.00);
+INSERT INTO `trips` VALUES (1,2,NULL,1,0.00,'pending','2026-03-25','2026-03-25 16:33:14','',0.00,NULL);
 ALTER TABLE `trips` ENABLE KEYS;
 UNLOCK TABLES;
 

@@ -35,7 +35,7 @@ function buildTripFilterClause(filters) {
 async function getTrips(filters, limit, offset) {
   const { whereClause, values } = buildTripFilterClause(filters);
   const [rows] = await pool.query(
-    `SELECT tr.*,
+    `SELECT tr.trip_id, tr.truck_id, tr.driver_id, tr.customer_id, tr.amount, tr.status, tr.trip_date, tr.material_type, tr.quantity, tr.destination,
             t.truck_no,
             d.name AS driver_name,
             c.name AS customer_name
