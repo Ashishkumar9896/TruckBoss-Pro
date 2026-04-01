@@ -1899,9 +1899,10 @@ async function fetchTrips() {
 
     const offset = (appState.trips.page - 1) * appState.trips.limit;
     tbody.innerHTML = appState.trips.rows.map((t, i) => {
-      const isOneTimeCustomer = !t.customer_id && t.manual_customer_name;
-      const displayName = isOneTimeCustomer 
-        ? `<span style="display:inline-flex;align-items:center;gap:0.5rem;"><span style="background:var(--warning);color:white;padding:0.2rem 0.6rem;border-radius:0.3rem;font-size:0.75rem;font-weight:bold;">ONE-TIME</span>${esc(t.manual_customer_name)}</span>`
+      const manualCustomerName = getTripManualCustomerName(t);
+      const isOneTimeCustomer = !t.customer_id && manualCustomerName;
+      const displayName = isOneTimeCustomer
+        ? esc(manualCustomerName)
         : esc(t.customer_name || '—');
       
       return `<tr>
@@ -1975,6 +1976,7 @@ async function submitTrip(e) {
 function editTrip(id) {
   const t = appState.trips.rows.find(r => r.trip_id === id);
   if (!t) { showToast('Trip not found on this page', 'info'); return; }
+  const manualCustomerName = getTripManualCustomerName(t);
   document.getElementById('trpId').value = t.trip_id;
   document.getElementById('trpAmount').value = t.amount !== undefined ? t.amount : 0;
   document.getElementById('trpMaterial').value = t.material_type || '';
@@ -1984,10 +1986,10 @@ function editTrip(id) {
   document.getElementById('trpDestination').value = t.destination || '';
 
   // Determine if this is a one-time customer trip
-  const isOneTime = !t.customer_id && t.manual_customer_name;
+  const isOneTime = !t.customer_id && manualCustomerName;
 
   if (isOneTime) {
-    document.getElementById('trpManualCustomerName').value = t.manual_customer_name || '';
+    document.getElementById('trpManualCustomerName').value = manualCustomerName || '';
   } else {
     document.getElementById('trpManualCustomerName').value = '';
   }
@@ -1995,37 +1997,48 @@ function editTrip(id) {
   // Choices.js requires setChoiceByValue() — direct .value assignment doesn't update the custom UI
   const setChoice = (id, val) => {
     const inst = choiceInstances[id];
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
     if (inst && val) { inst.setChoiceByValue(String(val)); }
-    else { const el = document.getElementById(id); if (el) el.value = val || ''; }
   };
   setChoice('trpTruck',    t.truck_id    || '');
   setChoice('trpDriver',   t.driver_id   || '');
   // Set customer dropdown - if no customer_id, set to 'OTHER' for one-time customer
   if (t.customer_id) {
     setChoice('trpCustomer', t.customer_id);
-  } else if (t.manual_customer_name) {
+    setTripCustomerFieldVisibility(false);
+  } else if (manualCustomerName) {
     setChoice('trpCustomer', 'OTHER');
+    setTripCustomerFieldVisibility(true);
   } else {
     setChoice('trpCustomer', '');
+    setTripCustomerFieldVisibility(false);
   }
-  toggleOneTimeCustomerField();
 
   document.getElementById('tripForm').style.display = 'block';
   document.getElementById('tripForm').scrollIntoView({ behavior: 'smooth' });
 }
 
+function setTripCustomerFieldVisibility(show) {
+  const field = document.getElementById('trpManualCustomerNameGroup');
+  if (!field) return;
+  field.style.display = show ? 'block' : 'none';
+}
+
+function getTripManualCustomerName(t) {
+  const manual = String(t?.manual_customer_name || '').trim();
+  if (manual) return manual;
+  if (!t?.customer_id) {
+    const fallback = String(t?.customer_name || '').trim();
+    if (fallback && fallback.toLowerCase() !== 'unknown' && fallback !== '—') return fallback;
+  }
+  return '';
+}
+
 // Toggle the one-time customer name field visibility
 function toggleOneTimeCustomerField() {
   const dropdown = document.getElementById('trpCustomer');
-  const field = document.getElementById('trpManualCustomerNameGroup');
-  const isOther = dropdown.value === 'OTHER';
-  
-  if (isOther) {
-    field.style.display = 'block';
-  } else {
-    field.style.display = 'none';
-    document.getElementById('trpManualCustomerName').value = '';
-  }
+  setTripCustomerFieldVisibility(dropdown && dropdown.value === 'OTHER');
 }
 
 async function deleteTrip(id) {

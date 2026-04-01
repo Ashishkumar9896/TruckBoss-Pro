@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bihal-dashboard-v4';
+const CACHE_NAME = 'bihal-dashboard-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -25,10 +25,35 @@ self.addEventListener('install', (event) => {
         console.warn('Failed to cache assets during install:', err);
       })
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  const requestUrl = new URL(event.request.url);
+  const isHtmlRequest = event.request.mode === 'navigate' || requestUrl.pathname.endsWith('.html');
+  const isScriptOrStyle =
+    requestUrl.pathname.endsWith('.js') ||
+    requestUrl.pathname.endsWith('.css') ||
+    requestUrl.pathname.endsWith('.json');
+
+  if (isHtmlRequest || isScriptOrStyle) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const resClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            if (response.ok) {
+              cache.put(event.request, resClone);
+            }
+          });
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
+    );
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)
@@ -63,6 +88,6 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });

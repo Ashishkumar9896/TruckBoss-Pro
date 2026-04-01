@@ -1716,7 +1716,16 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js').catch(err => console.warn('SW register failed:', err));
+        navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' }).then((registration) => {
+          registration.update().catch(() => {});
+          window.addEventListener('focus', () => registration.update().catch(() => {}));
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!window.__swReloaded) {
+              window.__swReloaded = true;
+              window.location.reload();
+            }
+          });
+        }).catch(err => console.warn('SW register failed:', err));
       });
     }
   </script>
