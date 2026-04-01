@@ -1121,9 +1121,10 @@
                 <div
                   style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-color);">
                   <i class="fa-solid fa-gas-pump" style="color:var(--primary);font-size:1.1rem;"></i>
-                  <h4 style="margin:0;font-size:1rem;">Log Fuel Entry</h4>
+                  <h4 style="margin:0;font-size:1rem;" id="fuelFormTitle">Log Fuel Entry</h4>
                 </div>
                 <form onsubmit="submitFuel(event)">
+                  <input type="hidden" id="fuelId">
                   <div class="form-grid">
                     <div class="form-group">
                       <label><i class="fa-solid fa-truck"
@@ -1475,7 +1476,7 @@
               <div
                 style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-color);">
                 <i class="fa-solid fa-wrench" style="color:var(--primary);font-size:1.1rem;"></i>
-                <h4 style="margin:0;font-size:1rem;">Log Maintenance Service</h4>
+                <h4 style="margin:0;font-size:1rem;" id="maintenanceFormTitle">Log Maintenance Service</h4>
               </div>
               <form onsubmit="submitMaintenance(event)">
                 <input type="hidden" id="mtnId">

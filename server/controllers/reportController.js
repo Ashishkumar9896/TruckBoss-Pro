@@ -1088,7 +1088,9 @@ async function getTruckProfitabilityReport(req, res, next) {
               COALESCE(SUM(tr.amount), 0)
                 - COALESCE(SUM(fd.daily_fuel_cost), 0) AS net_profit
        FROM truck_details t
-       LEFT JOIN trips tr ON tr.truck_id = t.truck_id
+       LEFT JOIN (
+         SELECT * FROM trips
+       ) tr ON tr.truck_id = t.truck_id
        LEFT JOIN (
          SELECT truck_id, DATE(fuel_date) AS fuel_day, SUM(price) AS daily_fuel_cost
          FROM fuel_details

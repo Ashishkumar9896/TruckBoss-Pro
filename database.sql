@@ -56,7 +56,8 @@ CREATE TABLE `customer_transactions` (
   PRIMARY KEY (`transaction_id`),
   KEY `idx_customer_transactions_customer_id` (`customer_id`),
   CONSTRAINT `fk_customer_transactions_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 SET character_set_client = @saved_cs_client;
 
 
@@ -84,7 +85,7 @@ CREATE TABLE `customers` (
   `due_date` date DEFAULT NULL,
   `follow_up_notes` text,
   PRIMARY KEY (`customer_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 SET character_set_client = @saved_cs_client;
 
 
@@ -204,7 +205,7 @@ CREATE TABLE `trips` (
   KEY `fk_trip_driver` (`driver_id`),
   CONSTRAINT `fk_trip_driver` FOREIGN KEY (`driver_id`) REFERENCES `driver_details` (`driver_id`) ON DELETE SET NULL,
   CONSTRAINT `fk_trip_truck` FOREIGN KEY (`truck_id`) REFERENCES `truck_details` (`truck_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 SET character_set_client = @saved_cs_client;
 
 
@@ -233,7 +234,7 @@ CREATE TABLE `truck_details` (
   UNIQUE KEY `truck_no` (`truck_no`),
   KEY `fk_truck_driver` (`driver_id`),
   CONSTRAINT `fk_truck_driver` FOREIGN KEY (`driver_id`) REFERENCES `driver_details` (`driver_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 SET character_set_client = @saved_cs_client;
 
 
@@ -259,7 +260,7 @@ CREATE TABLE `users` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 SET character_set_client = @saved_cs_client;
 
 
@@ -267,7 +268,9 @@ SET character_set_client = @saved_cs_client;
 
 LOCK TABLES `users` WRITE;
 ALTER TABLE `users` DISABLE KEYS;
-INSERT INTO `users` VALUES (1,'ashishkumarjha9896@gmail.com','Ashish@9896','Ashish','admin','2026-03-23 12:04:21'),(2,'admin@gmail.com','Admin@1234','Admin','admin','2026-03-26 12:42:42');
+INSERT INTO `users` VALUES
+(1,'bihalsuppliers@gmail.com','$2a$12$xYujL5T3ROc.cKTBHAPHlOPjwb.6j0fCZ8X6COnQ8DJNFQpjPd.C.','Savita Bihal','admin','2026-03-23 12:04:21'),
+(2,'admin@gmail.com','$2a$12$yfMv124IcqJyqKROtF2IJ./Zcu1FiC4Zr/RMhI1a68lybak1lHx5e','Admin','admin','2026-03-26 12:42:42');
 ALTER TABLE `users` ENABLE KEYS;
 UNLOCK TABLES;
 SET TIME_ZONE=@OLD_TIME_ZONE;

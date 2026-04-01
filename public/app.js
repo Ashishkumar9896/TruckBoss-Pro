@@ -1,4 +1,4 @@
-const API = "";
+﻿const API = "";
 
 const appState = {
   socket: null,
@@ -215,15 +215,15 @@ function showToast(msg, type = 'info') {
 // Utility: show/hide loading indicators, error, or empty states
 function showLoading(c, msg = 'Loading...') { if (!c) return; c.style.position = 'relative'; const d = document.createElement('div'); d.className = 'loading'; d.innerText = msg; c.appendChild(d); }
 function hideLoading(c) { if (!c) return; c.querySelectorAll('.loading').forEach(e => e.remove()); }
-function showError(c, m) { const el = typeof c === 'string' ? document.getElementById(c) : c; if (el) el.innerHTML = `<div class='error'>⚠ ${m}</div>`; }
+function showError(c, m) { const el = typeof c === 'string' ? document.getElementById(c) : c; if (el) el.innerHTML = `<div class='error'>? ${m}</div>`; }
 function emptyRow(cols, msg) { return `<tr><td colspan="${cols}" class="empty">${msg}</td></tr>`; }
-function errorRow(cols) { return `<tr><td colspan="${cols}" class="error">⚠ Failed to load data</td></tr>`; }
+function errorRow(cols) { return `<tr><td colspan="${cols}" class="error">? Failed to load data</td></tr>`; }
 
 // Utility: toggle and cancel form visibility
 function toggleForm(id) { const el = document.getElementById(id); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
 function cancelForm(id) { document.getElementById(id).style.display = 'none'; }
 function esc(v) { return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtCurrency(v) { return `₹${Number(v||0).toLocaleString('en-IN')}`; }
+function fmtCurrency(v) { return `\u20B9${Number(v||0).toLocaleString('en-IN')}`; }
 function fmtDate(v) { return v ? String(v).split('T')[0] : '—'; }
 function getProofDocumentUrl(value) {
   if (!value) return '';
@@ -487,7 +487,7 @@ async function submitAddUser() {
   try {
     await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ full_name, email, password, role }) });
     document.getElementById('addUserModal')?.remove();
-    showToast(`✅ User ${email} created as ${role}`, 'success');
+    showToast(`? User ${email} created as ${role}`, 'success');
   } catch (err) { showToast(err.message, 'error'); }
 }
 
@@ -790,7 +790,7 @@ function renderCharts(rev, fuel) {
   if (revenueChart) revenueChart.destroy();
   revenueChart = new Chart(document.getElementById('revenueChart').getContext('2d'), {
     type: 'bar',
-    data: { labels: rev.map(d => d.month), datasets: [{ label: 'Revenue (₹)', data: rev.map(d => d.revenue), backgroundColor: '#3b82f6', borderRadius: 4 }] },
+    data: { labels: rev.map(d => d.month), datasets: [{ label: 'Revenue (?)', data: rev.map(d => d.revenue), backgroundColor: '#3b82f6', borderRadius: 4 }] },
     options: { responsive: true, maintainAspectRatio: false }
   });
   if (fuelTrendChart) fuelTrendChart.destroy();
@@ -805,7 +805,7 @@ function renderCharts(rev, fuel) {
     data: {
       labels: fuel.map(d => d.month),
       datasets: [{
-        label: 'Total Cost (₹)',
+        label: 'Total Cost (?)',
         data: fuel.map(d => d.fuelCost),
         backgroundColor: fuelGradient,
         borderRadius: 6,
@@ -830,7 +830,7 @@ function renderCharts(rev, fuel) {
               const cost = context.raw;
               const liters = fuel[context.dataIndex].fuelLiters;
               return [
-                ` Cost: ₹${cost.toLocaleString('en-IN')}`,
+                ` Cost: \u20B9${cost.toLocaleString('en-IN')}`,
                 ` Volume: ${liters.toLocaleString('en-IN')} L`
               ];
             }
@@ -1000,6 +1000,10 @@ function resetTruckForm() {
   document.getElementById('trkDriver').value = '';
   document.getElementById('trkStatus').value = 'Available';
   document.getElementById('trkMaintenance').value = 'Not Required';
+  const ci = window.choiceInstances && window.choiceInstances['trkDriver'];
+  if (ci) ci.setChoiceByValue('');
+  const title = document.getElementById('truckFormTitle');
+  if (title) title.textContent = 'Add New Truck';
 }
 
 /* ==============================
@@ -1730,9 +1734,9 @@ function resetCustomerForm() {
   if (title) title.textContent = 'Add New Customer';
 }
 
-/* ══════════════════════════════════════════
+/* ------------------------------------------
    TRIPS CRUD
-   ══════════════════════════════════════════ */
+   ------------------------------------------ */
 function applyTripFilters() {
   appState.trips.page = 1;
   const ps = document.getElementById('tripPageSize');
@@ -1981,8 +1985,6 @@ function editTrip(id) {
 
   // Determine if this is a one-time customer trip
   const isOneTime = !t.customer_id && t.manual_customer_name;
-  document.getElementById('trpOneTimeCustomer').checked = isOneTime;
-  toggleOneTimeCustomerField();
 
   if (isOneTime) {
     document.getElementById('trpManualCustomerName').value = t.manual_customer_name || '';
@@ -2006,10 +2008,7 @@ function editTrip(id) {
   } else {
     setChoice('trpCustomer', '');
   }
-  // Show/hide manual customer name field based on customer type
-  if (t.manual_customer_name && !t.customer_id) {
-    document.getElementById('trpManualCustomerNameGroup').style.display = 'block';
-  }
+  toggleOneTimeCustomerField();
 
   document.getElementById('tripForm').style.display = 'block';
   document.getElementById('tripForm').scrollIntoView({ behavior: 'smooth' });
@@ -2042,14 +2041,18 @@ function resetTripForm() {
   document.getElementById('trpMaterial').value = '';
   document.getElementById('trpQuantity').value = '0';
   document.getElementById('trpStatus').value = 'pending';
-  
-  // Hide manual customer name field
-  document.getElementById('trpManualCustomerNameGroup').style.display = 'none';
+
+  ['trpTruck', 'trpDriver', 'trpCustomer'].forEach((id) => {
+    const inst = choiceInstances[id];
+    if (inst) inst.setChoiceByValue('');
+  });
+
+  toggleOneTimeCustomerField();
 }
 
-/* ══════════════════════════════════════════
+/* ------------------------------------------
    FUEL CRUD
-   ══════════════════════════════════════════ */
+   ------------------------------------------ */
 function changeFuelPage(dir) {
   const np = appState.fuel.page + dir;
   if (np >= 1 && np <= appState.fuel.totalPages) { appState.fuel.page = np; fetchFuelData(); }
@@ -2148,6 +2151,7 @@ async function fetchFuelData() {
     if (currentTrFilter && document.getElementById('fuelFilterTruck')) document.getElementById('fuelFilterTruck').value = currentTrFilter;
 
     const rows = res.data || [];
+    appState.fuel.rows = rows;
     appState.fuel.totalPages = Math.max(Math.ceil(res.totalRecords / appState.fuel.limit), 1);
     document.getElementById('fuelPageInfo').textContent =
       `Page ${appState.fuel.page} of ${appState.fuel.totalPages} • ${res.totalRecords || 0} records`;
@@ -2238,12 +2242,13 @@ async function fetchFuelData() {
         <td><span class="status-badge" style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.3);">
           <i class="fa-solid fa-droplet" style="margin-right:4px;font-size:0.7rem;"></i>${liters.toLocaleString('en-IN')} L
         </span></td>
-        <td style="color:var(--text-muted);font-size:0.88rem;">₹${rate}/L</td>
+        <td style="color:var(--text-muted);font-size:0.88rem;">\u20B9${rate}/L</td>
         <td><strong style="color:var(--danger);">${fmtCurrency(price)}</strong></td>
         <td><span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--text-muted);">
           <i class="fa-regular fa-calendar" style="font-size:0.75rem;"></i>${fmtDate(f.fuel_date)}
         </span></td>
         <td class="actions-cell">
+          <button class="btn-icon" title="Edit" onclick="editFuel(${f.fuel_id})"><i class="fa-solid fa-pen"></i></button>
           <button class="btn-icon btn-icon-danger" title="Delete" onclick="deleteFuel(${f.fuel_id})"><i class="fa-solid fa-trash"></i></button>
         </td>
       </tr>`;
@@ -2253,12 +2258,43 @@ async function fetchFuelData() {
 
 async function submitFuel(e) {
   e.preventDefault();
+  const id = document.getElementById('fuelId').value;
   const body = { truck_id: document.getElementById('fuelTruck').value || null, driver_id: document.getElementById('fuelDriver').value || null, liters: document.getElementById('fuelLiters').value, price: document.getElementById('fuelPrice').value, fuel_date: document.getElementById('fuelDate').value };
   try {
-    await api('/api/fuel', { method: 'POST', body: JSON.stringify(body) });
-    showToast('Fuel record added', 'success');
+    if (id) {
+      await api(`/api/fuel/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+      showToast('Fuel record updated', 'success');
+    } else {
+      await api('/api/fuel', { method: 'POST', body: JSON.stringify(body) });
+      showToast('Fuel record added', 'success');
+    }
     cancelForm('fuelForm'); resetFuelForm(); loadFuel();
   } catch (err) { showToast(err.message, 'error'); }
+}
+
+function editFuel(id) {
+  const f = appState.fuel.rows.find(r => r.fuel_id === id);
+  if (!f) { showToast('Fuel record not found on this page', 'info'); return; }
+
+  document.getElementById('fuelId').value = f.fuel_id;
+  document.getElementById('fuelLiters').value = f.liters || 0;
+  document.getElementById('fuelPrice').value = f.price || 0;
+  document.getElementById('fuelDate').value = f.fuel_date ? String(f.fuel_date).split('T')[0] : '';
+
+  ['fuelTruck', 'fuelDriver'].forEach((fieldId) => {
+    const inst = choiceInstances[fieldId];
+    const value = fieldId === 'fuelTruck' ? f.truck_id : f.driver_id;
+    if (inst && value) inst.setChoiceByValue(String(value));
+    else {
+      const el = document.getElementById(fieldId);
+      if (el) el.value = value || '';
+    }
+  });
+
+  const title = document.getElementById('fuelFormTitle');
+  if (title) title.textContent = `Edit Fuel Entry - ${f.truck_no || 'Record'}`;
+  document.getElementById('fuelForm').style.display = 'block';
+  document.getElementById('fuelForm').scrollIntoView({ behavior: 'smooth' });
 }
 
 async function deleteFuel(id) {
@@ -2267,12 +2303,16 @@ async function deleteFuel(id) {
 }
 
 function resetFuelForm() {
-  ['fuelLiters', 'fuelPrice', 'fuelDate'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('fuelTruck').value = '';
-  document.getElementById('fuelDriver').value = '';
+  ['fuelId', 'fuelLiters', 'fuelPrice', 'fuelDate'].forEach(id => document.getElementById(id).value = '');
+  const ciT = window.choiceInstances && window.choiceInstances['fuelTruck'];
+  if (ciT) ciT.setChoiceByValue(''); else document.getElementById('fuelTruck').value = '';
+  const ciD = window.choiceInstances && window.choiceInstances['fuelDriver'];
+  if (ciD) ciD.setChoiceByValue(''); else document.getElementById('fuelDriver').value = '';
+  const title = document.getElementById('fuelFormTitle');
+  if (title) title.textContent = 'Log Fuel Entry';
 }
 
-/* ── Export Handlers ── */
+/* -- Export Handlers -- */
 async function downloadReport(path, filename) {
   try {
     const tk = localStorage.getItem('tbToken');
@@ -2319,9 +2359,9 @@ async function openJsonReport(path, title) {
   }
 }
 
-/* ══════════════════════════════════════════
+/* ------------------------------------------
    ADVANCED MODULES (Performance, Maintenance, Efficiency)
-   ══════════════════════════════════════════ */
+   ------------------------------------------ */
 
 /* Driver Performance */
 async function loadPerformance() {
@@ -2599,7 +2639,7 @@ async function submitMaintenance(e) {
     else     { result = await api('/api/maintenance',       { method: 'POST', body }); showToast('Service logged', 'success'); }
     // Warn if user selected a file but the server didn't store it
     if (proofFile && result && result.proof_stored === false) {
-      showToast('⚠️ Record saved, but proof file could not be stored. Check Cloudinary settings.', 'error');
+      showToast('?? Record saved, but proof file could not be stored. Check Cloudinary settings.', 'error');
     }
     cancelForm('maintenanceForm'); resetMaintenanceForm(); loadMaintenance();
   } catch (err) { 
@@ -2689,7 +2729,7 @@ async function fetchEfficiencyData() {
       data: {
         labels: trend.map(d => d.month),
         datasets: [{
-          label: 'Total Cost (₹)',
+          label: 'Total Cost (?)',
           data: trend.map(d => d.cost),
           backgroundColor: effGradient,
           borderRadius: 6,
@@ -2714,7 +2754,7 @@ async function fetchEfficiencyData() {
                 const cost = context.raw;
                 const liters = trend[context.dataIndex].liters;
                 return [
-                  ` Cost: ₹${cost.toLocaleString('en-IN')}`,
+                  ` Cost: \u20B9${cost.toLocaleString('en-IN')}`,
                   ` Volume: ${liters.toLocaleString('en-IN')} L`
                 ];
               }
@@ -2736,7 +2776,7 @@ async function fetchEfficiencyData() {
   } catch (err) { tbody.innerHTML = errorRow(6); }
 }
 
-/* ── Socket.IO ── */
+/* -- Socket.IO -- */
 function initRealtime() {
   if (!window.io) return;
   const token = localStorage.getItem('tbToken');
@@ -2764,23 +2804,23 @@ function initRealtime() {
         // Toast only if map view is visible
         const mapView = document.getElementById('view-map');
         if (mapView && (mapView.style.display === 'flex' || mapView.style.display === 'block')) {
-          showToast(`🛰 ${data.truck_no || 'Truck'} location updated`, 'info');
+          showToast(`?? ${data.truck_no || 'Truck'} location updated`, 'info');
         }
       }
     });
   }
 }
 
-/* ── Auto-login ── */
+/* -- Auto-login -- */
 (function () {
   const tk = localStorage.getItem('tbToken');
   const u = localStorage.getItem('tbUser');
   if (tk && u) enterDashboard(JSON.parse(u));
 })();
 
-/* ══════════════════════════════════════════
+/* ------------------------------------------
    MAP VIEW — Leaflet + OpenStreetMap
-   ══════════════════════════════════════════ */
+   ------------------------------------------ */
 const mapState = {
   mainMap: null,
   dashMap: null,
@@ -2791,7 +2831,7 @@ const mapState = {
   gpsMarkers: {}
 };
 
-// Geocode a city name → [lat, lng] using Nominatim (with caching)
+// Geocode a city name ? [lat, lng] using Nominatim (with caching)
 async function geocodeCity(city) {
   if (!city) return null;
   const key = city.trim().toLowerCase();
@@ -2963,7 +3003,7 @@ async function renderMapRoutes() {
 
     const popupContent = `
       <div style="font-family:'Inter',sans-serif;min-width:160px;">
-        <div style="font-weight:700;font-size:1rem;margin-bottom:0.4rem;">${trip.from_city && trip.to_city ? `📍 ${esc(trip.from_city)} → 🏁 ${esc(trip.to_city)}` : `Trip #${trip.trip_id}`}</div>
+        <div style="font-weight:700;font-size:1rem;margin-bottom:0.4rem;">${trip.from_city && trip.to_city ? `?? ${esc(trip.from_city)} ? ?? ${esc(trip.to_city)}` : `Trip #${trip.trip_id}`}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.25rem 0.75rem;font-size:0.82rem;">
           <span style="color:#888;">Truck</span><span>${esc(trip.truck_no||'—')}</span>
           <span style="color:#888;">Driver</span><span>${esc(trip.driver_name||'—')}</span>
@@ -3010,7 +3050,7 @@ function toggleMapPanel() {
 // Show a single trip's route in the preview modal
 let _previewMapLayer = null;
 async function showTripOnMap(tripId, fromCity, toCity, truckNo, driverName, tripDate) {
-  document.getElementById('tripMapModalTitle').textContent = `${fromCity} → ${toCity}`;
+  document.getElementById('tripMapModalTitle').textContent = `${fromCity} ? ${toCity}`;
   document.getElementById('tripMapModalInfo').innerHTML =
     `<i class="fa-solid fa-truck"></i> <strong>${truckNo || '—'}</strong> &nbsp;|&nbsp; <i class="fa-solid fa-id-card"></i> ${driverName || '—'} &nbsp;|&nbsp; <i class="fa-regular fa-calendar"></i> ${tripDate}`;
   openModal('tripMapModal');
@@ -3041,8 +3081,8 @@ async function showTripOnMap(tripId, fromCity, toCity, truckNo, driverName, trip
   L.polyline(routeLatlngs, { color: '#4285F4', weight: 6, opacity: 1, lineCap: 'round', lineJoin: 'round' }).addTo(mapState.previewMap);
   const fromIcon = L.divIcon({ className: '', html: `<div class="gmap-start-pin"><i class="fa-solid fa-circle"></i></div>`, iconSize: [20, 20], iconAnchor: [10, 10] });
   const toIcon = L.divIcon({ className: '', html: `<div class="gmap-dest-pin" style="background:#EA4335;"><i class="fa-solid fa-location-dot"></i></div>`, iconSize: [32, 40], iconAnchor: [16, 40] });
-  L.marker(fromCoords, { icon: fromIcon }).bindPopup(`<b>📍 ${fromCity}</b><br><small style="color:#666;">Origin</small>`).addTo(mapState.previewMap).openPopup();
-  L.marker(toCoords, { icon: toIcon }).bindPopup(`<b>🏁 ${toCity}</b><br><small style="color:#666;">Destination</small>`).addTo(mapState.previewMap);
+  L.marker(fromCoords, { icon: fromIcon }).bindPopup(`<b>?? ${fromCity}</b><br><small style="color:#666;">Origin</small>`).addTo(mapState.previewMap).openPopup();
+  L.marker(toCoords, { icon: toIcon }).bindPopup(`<b>?? ${toCity}</b><br><small style="color:#666;">Destination</small>`).addTo(mapState.previewMap);
   mapState.previewMap.fitBounds(routeLatlngs, { padding: [50, 50] });
 }
 
@@ -3071,12 +3111,12 @@ async function renderDashboardMap() {
   } catch (e) {}
 }
 
-/* ══════════════════════════════════════════
+/* ------------------------------------------
    GPS LIVE TRACKING
-   ══════════════════════════════════════════ */
+   ------------------------------------------ */
 
 // Build popup HTML for a GPS truck marker
-// Reverse geocode lat/lng → human-readable place name (with cache)
+// Reverse geocode lat/lng ? human-readable place name (with cache)
 const _reverseCache = {};
 async function reverseGeocode(lat, lng) {
   const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
@@ -3097,15 +3137,15 @@ function buildGpsPopup(truck, placeName) {
   const ts = truck.location_updated_at
     ? new Date(truck.location_updated_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
     : 'Just now';
-  const location = placeName || '📡 Locating…';
+  const location = placeName || '?? Locating…';
   return `
     <div style="font-family:'Inter',sans-serif;min-width:160px;padding:4px 0;">
       <div style="font-weight:700;font-size:0.95rem;margin-bottom:6px;">
-        🛻 ${esc(truck.truck_no || 'Truck')}
+        ?? ${esc(truck.truck_no || 'Truck')}
       </div>
       <div style="display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:0.8rem;">
         <span style="color:#888;">Driver</span><span>${esc(truck.driver_name || '—')}</span>
-        <span style="color:#888;">Status</span><span style="color:#10b981;font-weight:600;">● Live GPS</span>
+        <span style="color:#888;">Status</span><span style="color:#10b981;font-weight:600;">? Live GPS</span>
         <span style="color:#888;">Location</span><span style="font-weight:500;">${location}</span>
         <span style="color:#888;">Updated</span><span>${ts}</span>
       </div>
@@ -3145,7 +3185,7 @@ function renderLiveGpsMarkers(trucks) {
   });
 }
 
-/* ── Share My Location (Driver GPS) ── */
+/* -- Share My Location (Driver GPS) -- */
 let _watchId = null;        // browser watchPosition ID
 let _sharingTruckId = null; // which truck this driver is sharing for
 
@@ -3160,7 +3200,7 @@ async function promptShareGps() {
     const trucks = await api('/api/trucks').catch(() => []);
     const myTruck = trucks.find(t => String(t.driver_id) === String(user.driver_id));
     if (myTruck) {
-      showToast(`📡 Sharing GPS for ${myTruck.truck_no}…`, 'info');
+      showToast(`?? Sharing GPS for ${myTruck.truck_no}…`, 'info');
       shareMyLocation(myTruck.truck_id);
       return;
     } else {
@@ -3200,7 +3240,7 @@ function startSharingFromPicker() {
 
 function shareMyLocation(truckId) {
   if (!navigator.geolocation) { showToast('GPS not supported on this device', 'error'); return; }
-  showToast('📡 Starting GPS sharing…', 'info');
+  showToast('?? Starting GPS sharing…', 'info');
   // Show floating badge
   const badge = document.createElement('div');
   badge.id = 'gpsSharingBadge';
@@ -3263,7 +3303,7 @@ function stopSharingLocation() {
   showToast('GPS sharing stopped', 'info');
 }
 
-/* ── City Autocomplete for Add Trip Form ── */
+/* -- City Autocomplete for Add Trip Form -- */
 let _acTimer = null;
 async function cityAutocomplete(inputId, listId) {
   const input = document.getElementById(inputId);
@@ -3280,7 +3320,7 @@ async function cityAutocomplete(inputId, listId) {
       if (!data || !data.length) { list.style.display = 'none'; return; }
       list.innerHTML = data.map(d => {
         const name = d.display_name.split(',')[0];
-        return `<div class="ac-item" onclick="selectCity('${inputId}','${listId}','${name.replace(/'/g, '')}')">📍 ${name}</div>`;
+        return `<div class="ac-item" onclick="selectCity('${inputId}','${listId}','${name.replace(/'/g, '')}')">?? ${name}</div>`;
       }).join('');
       list.style.display = 'block';
     } catch (e) { list.style.display = 'none'; }
@@ -3306,7 +3346,7 @@ document.addEventListener('click', e => {
   if (notifMenu && !notifMenu.contains(e.target)) notifMenu.classList.remove('show');
 });
 
-/* ── Mobile Sidebar Toggle ── */
+/* -- Mobile Sidebar Toggle -- */
 function toggleSidebar() {
   const sidebar = document.getElementById('mainSidebar');
   const overlay = document.getElementById('sidebarOverlay');
@@ -3326,7 +3366,7 @@ function toggleSidebar() {
   sidebar.classList.toggle('collapsed');
 }
 
-/* ── PWA Installation ── */
+/* -- PWA Installation -- */
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   // Prevent the mini-infobar from appearing on mobile
@@ -3355,3 +3395,4 @@ function triggerInstall() {
     });
   }
 }
+

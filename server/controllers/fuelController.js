@@ -1,6 +1,7 @@
 const {
   getFuelRecords,
   createFuelRecord,
+  updateFuelRecord,
   deleteFuelRecord,
 } = require("../models/fuelModel");
 const { getIO } = require("../socket");
@@ -74,8 +75,47 @@ async function removeFuel(req, res, next) {
   }
 }
 
+async function updateFuel(req, res, next) {
+  try {
+    const { truck_id, driver_id, liters, price, fuel_date } = req.body;
+    if (!liters || !price || !fuel_date) {
+      return res.status(400).json({ error: "liters, price and fuel_date are required" });
+    }
+
+    const result = await updateFuelRecord(
+      req.params.id,
+      truck_id || null,
+      driver_id || null,
+      liters,
+      price,
+      fuel_date
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Fuel record not found" });
+    }
+
+    const io = getIO();
+    if (io) {
+      io.emit("fuel_update", {
+        fuel_id: Number(req.params.id),
+        truck_id: truck_id || null,
+        driver_id: driver_id || null,
+        liters,
+        price,
+        fuel_date,
+      });
+    }
+
+    return res.json({ message: "Fuel record updated" });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   listFuel,
   addFuel,
+  updateFuel,
   removeFuel,
 };

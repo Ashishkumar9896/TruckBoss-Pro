@@ -48,6 +48,14 @@ async function createFuelRecord(truckId, driverId, liters, price, fuelDate) {
   return result;
 }
 
+async function updateFuelRecord(id, truckId, driverId, liters, price, fuelDate) {
+  const [result] = await pool.query(
+    "UPDATE fuel_details SET truck_id = ?, driver_id = ?, liters = ?, price = ?, fuel_date = ? WHERE fuel_id = ?",
+    [truckId, driverId, liters, price, fuelDate, id]
+  );
+  return result;
+}
+
 async function deleteFuelRecord(id) {
   const [result] = await pool.query("DELETE FROM fuel_details WHERE fuel_id = ?", [id]);
   return result;
@@ -56,5 +64,6 @@ async function deleteFuelRecord(id) {
 module.exports = {
   getFuelRecords,
   createFuelRecord,
+  updateFuelRecord,
   deleteFuelRecord,
 };

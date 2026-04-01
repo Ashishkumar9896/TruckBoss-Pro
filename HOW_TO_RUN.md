@@ -12,7 +12,9 @@ Follow these simple steps to set up the project on your new computer.
 1. Open your MySQL Tool (Workbench / XAMPP Control Panel).
 2. Create a new database named **`trucks`**.
 3. Import the file named **`database.sql`** (located in the main project folder) into the `trucks` database.
-   - *This creates all tables and includes sample data like the "Ashish" admin account.*
+   - *This creates all tables.*
+   - *Business tables start empty.*
+   - *Only login users are preloaded so you can sign in after import.*
 
 ---
 
@@ -42,10 +44,13 @@ Follow these simple steps to set up the project on your new computer.
 Use these details to log in for the first time:
 
 **Option 1: Primary Account**
+- **Email:** bihalsuppliers@gmail.com
+- **Password:** savitabihal
+
+**Option 2: Backup Admin**
 - **Email:** admin@gmail.com
 - **Password:** Admin@1234
 
 > **Note:** Once you log in, you can add more users (Managers or Admins) from the **Settings** menu at the top right.
 
 ---
-

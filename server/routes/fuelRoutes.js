@@ -2,6 +2,7 @@ const express = require("express");
 const {
   listFuel,
   addFuel,
+  updateFuel,
   removeFuel,
 } = require("../controllers/fuelController");
 const asyncHandler = require("../middleware/asyncHandler");
@@ -18,6 +19,12 @@ router.post(
   validateFuel,
   handleValidationErrors,
   asyncHandler(addFuel)
+);
+router.put(
+  "/fuel/:id",
+  validateFuel,
+  handleValidationErrors,
+  asyncHandler(updateFuel)
 );
 router.delete("/fuel/:id", asyncHandler(removeFuel));
 
