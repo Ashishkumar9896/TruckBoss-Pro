@@ -44,7 +44,7 @@ async function addTrip(req, res, next) {
     const {
       truck_id, driver_id, customer_id,
       amount = 0, status = "pending", trip_date,
-      material_type = null, quantity = null
+      material_type = null, quantity = null, destination = null
     } = req.body;
 
     if (!trip_date) {
@@ -53,7 +53,7 @@ async function addTrip(req, res, next) {
 
     const result = await createTrip(
       truck_id || null, driver_id || null, customer_id || null,
-      amount, status, trip_date, material_type, quantity
+      amount, status, trip_date, material_type, quantity, destination
     );
 
 
@@ -70,7 +70,8 @@ async function addTrip(req, res, next) {
         status,
         trip_date,
         material_type,
-        quantity
+        quantity,
+        destination
       });
 
     }
@@ -86,7 +87,7 @@ async function addTrip(req, res, next) {
 
 async function editTrip(req, res, next) {
   try {
-    const { truck_id, driver_id, customer_id, amount, status, trip_date, material_type = null, quantity = null } = req.body;
+    const { truck_id, driver_id, customer_id, amount, status, trip_date, material_type = null, quantity = null, destination = null } = req.body;
 
     const existingRows = await getTripCustomerById(req.params.id);
     if (existingRows.length === 0) {
@@ -97,7 +98,7 @@ async function editTrip(req, res, next) {
 
     const result = await updateTrip(
       req.params.id, truck_id || null, driver_id || null,
-      customer_id || null, amount, status, trip_date, material_type, quantity
+      customer_id || null, amount, status, trip_date, material_type, quantity, destination
     );
 
 

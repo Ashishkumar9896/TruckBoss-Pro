@@ -1877,7 +1877,7 @@ async function fetchTrips() {
       <td>${esc(t.material_type || '—')}</td>
       <td>${t.quantity || 0} Tons</td>
       <td>${esc(t.truck_no || '—')}</td><td>${esc(t.driver_name || '—')}</td><td>${esc(t.customer_name || '—')}</td>
-
+      <td>${t.destination ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;"><i class="fa-solid fa-location-dot" style="color:var(--danger);font-size:0.75rem;"></i>${esc(t.destination)}</span>` : '<span style="color:var(--text-muted);">—</span>'}</td>
       <td>${fmtDate(t.trip_date)}</td>
 
       <td><strong>${fmtCurrency(t.amount || 0)}</strong></td>
@@ -1899,7 +1899,8 @@ async function submitTrip(e) {
     material_type: document.getElementById('trpMaterial').value,
     quantity: document.getElementById('trpQuantity').value,
     status: document.getElementById('trpStatus').value,
-    trip_date: document.getElementById('trpDate').value
+    trip_date: document.getElementById('trpDate').value,
+    destination: document.getElementById('trpDestination').value || null
   };
   try {
     if (id) {
@@ -1927,6 +1928,7 @@ function editTrip(id) {
   document.getElementById('trpQuantity').value = t.quantity || 0;
   document.getElementById('trpStatus').value   = t.status || 'completed';
   document.getElementById('trpDate').value = t.trip_date ? t.trip_date.split('T')[0] : '';
+  document.getElementById('trpDestination').value = t.destination || '';
 
   // Choices.js requires setChoiceByValue() — direct .value assignment doesn't update the custom UI
   const setChoice = (id, val) => {
@@ -1948,7 +1950,7 @@ async function deleteTrip(id) {
 }
 
 function resetTripForm() {
-  ['trpId', 'trpAmount', 'trpDate'].forEach(id => document.getElementById(id).value = '');
+  ['trpId', 'trpAmount', 'trpDate', 'trpDestination'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('trpTruck').value = '';
   document.getElementById('trpDriver').value = '';
   document.getElementById('trpCustomer').value = '';
