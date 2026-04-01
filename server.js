@@ -26,6 +26,10 @@ const { initSocket } = require("./server/socket");
 const app = express();
 const server = http.createServer(app);
 
+// Trust Render's reverse proxy so express-rate-limit can correctly
+// identify client IPs via the X-Forwarded-For header.
+app.set('trust proxy', 1);
+
 // Enable Gzip compression for faster data transfer
 app.use(compression());
 

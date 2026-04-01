@@ -74,9 +74,18 @@ async function uploadProofToCloudinary(file) {
 async function storeProofDocument(file) {
   if (!file) return null;
   if (isCloudinaryConfigured()) {
+    console.log('[proofStorage] Uploading to Cloudinary...');
     return uploadProofToCloudinary(file);
   }
+  console.warn('[proofStorage] WARNING: Cloudinary not configured — saving file to LOCAL disk. Files will be lost on Render restart! Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET in Render environment variables.');
   return saveProofLocally(file);
+}
+
+// Log Cloudinary status on startup
+if (isCloudinaryConfigured()) {
+  console.log('[proofStorage] Cloudinary configured. Proof documents will be stored in cloud.');
+} else {
+  console.warn('[proofStorage] STARTUP WARNING: Cloudinary NOT configured. Proof documents will only be stored locally and will be lost on Render restart!');
 }
 
 module.exports = {
