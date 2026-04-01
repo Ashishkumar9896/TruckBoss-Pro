@@ -64,7 +64,6 @@ SET character_set_client = @saved_cs_client;
 
 LOCK TABLES `customer_transactions` WRITE;
 ALTER TABLE `customer_transactions` DISABLE KEYS;
-INSERT INTO `customer_transactions` VALUES (1,1,5000.00,'Cash',NULL,'2026-03-26','2026-03-26 09:00:56');
 ALTER TABLE `customer_transactions` ENABLE KEYS;
 UNLOCK TABLES;
 
@@ -93,7 +92,7 @@ SET character_set_client = @saved_cs_client;
 
 LOCK TABLES `customers` WRITE;
 ALTER TABLE `customers` DISABLE KEYS;
-INSERT INTO `customers` VALUES (1,'Ashish',NULL,'Post nawada',5000.00,0.00,'2026-03-25 16:30:44',NULL,NULL);
+
 ALTER TABLE `customers` ENABLE KEYS;
 UNLOCK TABLES;
 
@@ -212,7 +211,7 @@ SET character_set_client = @saved_cs_client;
 
 LOCK TABLES `trips` WRITE;
 ALTER TABLE `trips` DISABLE KEYS;
-INSERT INTO `trips` VALUES (1,2,NULL,1,0.00,'pending','2026-03-25','2026-03-25 16:33:14','',0.00,NULL);
+
 ALTER TABLE `trips` ENABLE KEYS;
 UNLOCK TABLES;
 
@@ -241,7 +240,6 @@ SET character_set_client = @saved_cs_client;
 
 LOCK TABLES `truck_details` WRITE;
 ALTER TABLE `truck_details` DISABLE KEYS;
-INSERT INTO `truck_details` VALUES (1,'UP-16-GH-7890',NULL,'Available','Not Required','2026-03-25 13:46:34'),(2,'MP-09-KL-6789',NULL,'In Use','Not Required','2026-03-25 16:26:37');
 ALTER TABLE `truck_details` ENABLE KEYS;
 UNLOCK TABLES;
 
