@@ -1,4 +1,4 @@
-﻿const API = "";
+const API = "";
 
 const appState = {
   socket: null,
@@ -1906,7 +1906,7 @@ async function fetchTrips() {
         : esc(t.customer_name || '—');
       
       return `<tr>
-        <td class="hide-mobile">${offset + i + 1}</td>
+        <td>${offset + i + 1}</td>
         <td>${esc(t.material_type || '—')}</td>
         <td>${t.quantity || 0} Tons</td>
         <td>${esc(t.truck_no || '—')}</td><td>${esc(t.driver_name || '—')}</td><td>${displayName}</td>

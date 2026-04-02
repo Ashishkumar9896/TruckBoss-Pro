@@ -3015,3 +3015,16 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 480px) {
+  #tripsExportDropdown {
+    left: 0 !important;
+    right: auto !important;
+    min-width: 180px;
+  }
+  
+  /* Reset the export text to be hidden on mobile if it was somehow shown */
+  .export-buttons .hide-mobile {
+    display: none !important;
+  }
+}
