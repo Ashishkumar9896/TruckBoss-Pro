@@ -549,21 +549,58 @@ function switchView(name) {
   ============================== */
 let revenueChart = null, fuelTrendChart = null;
 
+function buildDashboardAlertCard({ icon, title, meta = '', description = '', tone = 'warning' }) {
+  const toneClass = tone === 'danger' ? 'alert-warning-danger' : '';
+  const metaHtml = meta ? `<div class="alert-warning-meta">${meta}</div>` : '';
+  const descHtml = description ? `<div class="alert-warning-desc">${description}</div>` : '';
+
+  return `
+    <div class="alert-warning ${toneClass}">
+      <i class="${icon}"></i>
+      <div class="alert-warning-copy">
+        <div class="alert-warning-title">${title}</div>
+        ${metaHtml}
+        ${descHtml}
+      </div>
+    </div>
+  `;
+}
+
+function buildPendingTripAlertCard(trip) {
+  const manualCustomerName = getTripManualCustomerName(trip);
+  const customerName = manualCustomerName || trip.customer_name || 'Unknown customer';
+  const truckNo = trip.truck_no || 'Truck not assigned';
+  const material = trip.material_type || 'Material not set';
+  const qty = Number(trip.quantity || 0);
+  const qtyText = qty > 0 ? `${qty.toLocaleString('en-IN')} Tons` : 'Qty not set';
+  const destination = trip.destination || 'Destination not set';
+  const tripDate = trip.trip_date ? fmtDate(trip.trip_date) : 'Date not set';
+
+  return buildDashboardAlertCard({
+    icon: 'fa-solid fa-route',
+    title: `Pending Trip #${trip.trip_id}`,
+    meta: `Truck ${esc(truckNo)} | ${esc(customerName)}`,
+    description: `${esc(material)} | ${esc(qtyText)} | ${esc(destination)} | ${esc(tripDate)}`
+  });
+}
+
 async function loadDashboard() {
   switchView('dashboard');
   const c = document.getElementById('view-dashboard');
   showLoading(c, 'Loading dashboard metrics...');
   try {
-    const [metricsRes, analyticsRes, trucksRes, forecastRes] = await Promise.allSettled([
+    const [metricsRes, analyticsRes, trucksRes, forecastRes, tripsRes] = await Promise.allSettled([
       api('/api/dashboard/metrics'), 
       api('/api/dashboard/analytics'), 
       api('/api/trucks'),
-      api('/api/dashboard/maintenance-forecast')
+      api('/api/dashboard/maintenance-forecast'),
+      api('/api/trips?limit=500')
     ]);
     const m = metricsRes.status === 'fulfilled' ? metricsRes.value : {};
     const a = analyticsRes.status === 'fulfilled' ? analyticsRes.value : {};
     const trucks = trucksRes.status === 'fulfilled' ? trucksRes.value : [];
     const forecast = forecastRes.status === 'fulfilled' ? forecastRes.value : [];
+    const trips = tripsRes.status === 'fulfilled' ? (tripsRes.value.data || []) : [];
 
     if (metricsRes.status !== 'fulfilled') {
       throw metricsRes.reason || new Error('Dashboard metrics request failed');
@@ -653,24 +690,57 @@ async function loadDashboard() {
     if (pnd) pnd.textContent = dueSoon.length;
 
     const alertsBox = document.getElementById('dashboardAlerts');
-    let alertHtml = '';
+    const alertItems = [];
     if (m.notifications && m.notifications.length) {
-      alertHtml += m.notifications.slice(0, 6).map(n => `<div class="alert-warning"><i class="fa-solid fa-bell"></i> ${esc(n.message)}</div>`).join('');
+      const dashboardNotifications = m.notifications.filter(n => n.notification_type !== 'pending_trip_completion');
+      alertItems.push(...dashboardNotifications.slice(0, 6).map(n => buildDashboardAlertCard({
+        icon: 'fa-solid fa-bell',
+        title: esc(n.message)
+      })));
+    }
+
+    const pendingTrips = trips.filter(t => (t.status || '').toLowerCase() === 'pending');
+    if (pendingTrips.length > 0) {
+      alertItems.push(...pendingTrips.map(buildPendingTripAlertCard));
     }
     
     // Maintenance: show alerts for trucks due by date
     const dueTrucks = trucks.filter(t => t.maintenance && t.maintenance.toLowerCase() !== 'not required' && t.maintenance.toLowerCase() !== 'none' && t.maintenance.toLowerCase() !== '');
     if (dueTrucks.length > 0) {
-      alertHtml += dueTrucks.map(t => `<div class="alert-warning"><i class="fa-solid fa-triangle-exclamation"></i> Truck <strong>${esc(t.truck_no)}</strong> marked for manual service: ${esc(t.maintenance)}</div>`).join('');
+      alertItems.push(...dueTrucks.map(t => buildDashboardAlertCard({
+        icon: 'fa-solid fa-triangle-exclamation',
+        title: `Truck ${esc(t.truck_no)} needs manual service`,
+        description: esc(t.maintenance)
+      })));
     }
     
     // Maintenance: show alerts for trucks due by usage
     if (dueSoon.length > 0) {
-      alertHtml += dueSoon.map(f => `<div class="alert-warning" style="color:var(--danger); border-color:var(--danger); background:rgba(239,68,68,0.1);"><i class="fa-solid fa-wrench"></i> Truck <strong>${esc(f.truck_no)}</strong> requires maintenance! (${f.trips_since_service} trips since last service)</div>`).join('');
+      alertItems.push(...dueSoon.map(f => buildDashboardAlertCard({
+        icon: 'fa-solid fa-wrench',
+        title: `Truck ${esc(f.truck_no)} requires maintenance`,
+        description: `${f.trips_since_service} trips since last service`,
+        tone: 'danger'
+      })));
     }
 
-    if (alertHtml) {
-      alertsBox.innerHTML = alertHtml;
+    if (alertItems.length) {
+      const summaryText = alertItems.length > 5 ? 'Scroll to view all active alerts' : 'Latest operational alerts';
+      alertsBox.innerHTML = `
+        <div class="dashboard-alerts-panel">
+          <div class="dashboard-alerts-head">
+            <div>
+              <h4>Attention Needed</h4>
+              <p>${summaryText}</p>
+            </div>
+            <div class="dashboard-alerts-badge">
+              <i class="fa-solid fa-bell"></i>
+              ${alertItems.length}
+            </div>
+          </div>
+          <div class="dashboard-alerts-scroll">${alertItems.join('')}</div>
+        </div>
+      `;
       alertsBox.style.display = 'block';
     } else {
       alertsBox.style.display = 'none';
