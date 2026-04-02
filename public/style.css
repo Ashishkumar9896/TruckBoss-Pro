@@ -3018,15 +3018,16 @@ select {
 
 @media (max-width: 480px) {
   #tripsExportDropdown {
-    left: auto !important;
-    right: 0 !important;
-    width: calc(100vw - 1rem);
-    max-width: 240px;
+    left: 0 !important;
+    right: auto !important;
+    width: min(240px, calc(100vw - 1rem));
+    max-width: calc(100vw - 1rem);
     min-width: 0;
     max-height: calc(100vh - 8rem);
     overflow-y: auto;
     overflow-x: hidden;
     box-sizing: border-box;
+    transform-origin: top left;
   }
 
   #tripsExportDropdown .dropdown-item {
