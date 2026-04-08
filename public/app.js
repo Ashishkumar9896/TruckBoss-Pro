@@ -225,6 +225,48 @@ function cancelForm(id) { document.getElementById(id).style.display = 'none'; }
 function esc(v) { return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtCurrency(v) { return `\u20B9${Number(v||0).toLocaleString('en-IN')}`; }
 function fmtDate(v) { return v ? String(v).split('T')[0] : '—'; }
+function countDigits(value) { return String(value || '').replace(/\D/g, '').length; }
+function applyMetricValueBehavior() {
+  document.querySelectorAll('.metric-card .value-row p').forEach((el) => {
+    const needsScroll = countDigits(el.textContent) > 8;
+    el.classList.toggle('metric-value-scroll', needsScroll);
+    el.classList.toggle('metric-value-fit', !needsScroll);
+    el.scrollLeft = 0;
+    el.title = needsScroll ? `${el.textContent} (drag or swipe left/right to view)` : el.textContent;
+
+    if (!needsScroll || el.dataset.dragScrollReady === 'true') return;
+    el.dataset.dragScrollReady = 'true';
+
+    let pointerId = null;
+    let startX = 0;
+    let startScrollLeft = 0;
+
+    el.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (el.scrollWidth <= el.clientWidth) return;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startScrollLeft = el.scrollLeft;
+      el.setPointerCapture(event.pointerId);
+    });
+
+    el.addEventListener('pointermove', (event) => {
+      if (pointerId !== event.pointerId) return;
+      const deltaX = event.clientX - startX;
+      el.scrollLeft = startScrollLeft - deltaX;
+      event.preventDefault();
+    });
+
+    const stop = (event) => {
+      if (pointerId !== null && event.pointerId !== undefined && event.pointerId !== pointerId) return;
+      pointerId = null;
+    };
+
+    el.addEventListener('pointerup', stop);
+    el.addEventListener('pointercancel', stop);
+    el.addEventListener('pointerleave', stop);
+  });
+}
 function getProofDocumentUrl(value) {
   if (!value) return '';
   if (/^https?:\/\//i.test(value)) return value;
@@ -680,6 +722,7 @@ async function loadDashboard() {
       tft.textContent = 'This Month Fuel';
       tfi.className = 'fa-solid fa-bottle-droplet icon-orange';
     }
+    applyMetricValueBehavior();
 
     // Maintenance: process and display alerts and forecast
     const thresholdTrips = 15;
@@ -798,6 +841,7 @@ function toggleRevenueView() {
     val.textContent = fmtCurrency(window.todayRevenueAmt || 0);
     icon.className = 'fa-solid fa-calendar-day icon-cyan';
   }
+  applyMetricValueBehavior();
 }
 
 function toggleRevenueTotalView() {
@@ -816,6 +860,7 @@ function toggleRevenueTotalView() {
     val.textContent = fmtCurrency(window.totalRevenueAmt || 0);
     icon.className = 'fa-solid fa-sack-dollar icon-green';
   }
+  applyMetricValueBehavior();
 }
 
 function toggleProfitTotalView() {
@@ -834,6 +879,7 @@ function toggleProfitTotalView() {
     val.textContent = fmtCurrency(window.totalProfitAmt || 0);
     icon.className = 'fa-solid fa-money-bill-trend-up icon-green';
   }
+  applyMetricValueBehavior();
 }
 
 function toggleFuelTotalView() {
@@ -852,6 +898,7 @@ function toggleFuelTotalView() {
     val.textContent = fmtCurrency(window.totalFuelAmt || 0);
     icon.className = 'fa-solid fa-gas-pump icon-red';
   }
+  applyMetricValueBehavior();
 }
 
 function renderCharts(rev, fuel) {
@@ -1294,6 +1341,7 @@ function renderCustomerInsights(insights) {
     return acc;
   }, {});
   renderBillingTrend(grouped);
+  applyMetricValueBehavior();
 }
 
 
@@ -2317,8 +2365,8 @@ async function fetchFuelData() {
       const price  = Number(f.price  || 0);
       const rate   = liters > 0 ? (price / liters).toFixed(2) : '—';
       return `<tr>
-        <td class="hide-mobile">${offset + i + 1}</td>
-        <td class="hide-mobile"><span class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);font-weight:600;">
+        <td class="fuel-col-serial">${offset + i + 1}</td>
+        <td class="fuel-col-truck"><span class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);font-weight:600;">
           <i class="fa-solid fa-truck" style="margin-right:4px;font-size:0.7rem;"></i>${esc(f.truck_no || '—')}
         </span></td>
         <td>${esc(f.driver_name || '—')}</td>
@@ -3452,11 +3500,8 @@ function toggleSidebar() {
 /* -- PWA Installation -- */
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevent the mini-infobar from appearing on mobile
   e.preventDefault();
-  // Stash the event so it can be triggered later.
   deferredPrompt = e;
-  // Update UI notify the user they can install the PWA
   const installBtn = document.getElementById('installAppBtn');
   if (installBtn) {
     installBtn.style.display = 'block';
@@ -3479,3 +3524,233 @@ function triggerInstall() {
   }
 }
 
+/* ------------------------------------------
+   EXPENSES VIEW
+   ------------------------------------------ */
+async function loadExpenses() {
+  switchView('expenses');
+  const filterDateInput = document.getElementById('expenseFilterDate');
+  if (filterDateInput && !filterDateInput.value) {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    filterDateInput.value = `${d.getFullYear()}-${mm}-${dd}`;
+  }
+  if (filterDateInput) updateDateDisplay(filterDateInput.value);
+  const activeTypeFilter = window._expTypeFilter || 'all';
+  document.querySelectorAll('#expenseTypePills .type-pill').forEach((pill) => {
+    pill.classList.toggle('active-pill', pill.dataset.filter === activeTypeFilter);
+  });
+  fetchExpenses();
+}
+
+function setExpenseTypeFilter(type, btn) {
+  window._expTypeFilter = type || 'all';
+  document.querySelectorAll('#expenseTypePills .type-pill').forEach((pill) => {
+    pill.classList.toggle('active-pill', pill === btn);
+  });
+  fetchExpenses();
+}
+
+async function fetchExpenses() {
+  const tbody = document.getElementById('expensesTableBody');
+  try {
+    const res = await api('/api/expenses');
+    let data = res.data || [];
+    const filterInput = document.getElementById('expenseFilterDate');
+    const filterDate = filterInput ? filterInput.value : '';
+    
+    // Filter by date
+    if (filterDate) {
+      data = data.filter(item => fmtDate(item.date) === filterDate);
+    }
+
+    // Filter by type
+    const typeFilter = window._expTypeFilter || 'all';
+    if (typeFilter !== 'all') {
+      data = data.filter(item => item.type === typeFilter);
+    }
+
+    if (!data.length) {
+      tbody.innerHTML = emptyRow(6, filterDate ? `No expenses found for ${filterDate}.` : 'No expenses found.');
+      document.getElementById('expStatReceived').innerHTML = '&#8377;0';
+      document.getElementById('expStatGiven').innerHTML = '&#8377;0';
+      document.getElementById('expStatNet').innerHTML = '&#8377;0';
+      let owedElem = document.getElementById('expStatOwed');
+      if (owedElem) owedElem.innerHTML = '&#8377;0';
+      let advElem = document.getElementById('expStatAdvance');
+      if (advElem) advElem.innerHTML = '&#8377;0';
+      return;
+    }
+
+    let totalReceived = 0, totalGiven = 0, totalOwed = 0, totalAdvance = 0;
+
+    tbody.innerHTML = data.map(item => {
+      const amt = parseFloat(item.amount) || 0;
+      const type = item.type;
+      
+      if (type === 'Received') totalReceived += amt;
+      else if (type === 'Owed') totalOwed += amt;
+      else if (type === 'Advance') totalAdvance += amt;
+      else totalGiven += amt; // Given
+
+      let sourceBadge = '';
+      if (item.source === 'trip') sourceBadge = '<span class="badge hide-mobile" style="background:#8b5cf6;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;">Trip</span>';
+      else if (item.source === 'fuel') sourceBadge = '<span class="badge hide-mobile" style="background:#f97316;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;">Fuel</span>';
+      else if (item.source === 'maintenance') sourceBadge = '<span class="badge hide-mobile" style="background:#eab308;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;">Maint.</span>';
+      else sourceBadge = '<span class="badge hide-mobile" style="background:#64748b;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;">Manual</span>';
+
+      let actions = '';
+      if (item.source === 'manual') {
+        actions = `<button class="btn-icon" style="color:var(--danger);" onclick="deleteExpense(${item.id})"><i class="fa-solid fa-trash"></i></button>`;
+      } else if (item.source === 'trip' && type === 'Owed') {
+        actions = `<button class="btn-primary" style="padding:0.25rem 0.75rem; font-size:0.75rem; border-radius:20px; background:linear-gradient(135deg,#10b981,#059669); border:none; box-shadow:0 3px 8px rgba(16,185,129,0.3); cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="markTripAsPaid(${item.id}, this)"><i class="fa-solid fa-circle-check"></i> Mark Paid</button>`;
+      } else if (item.source === 'trip' && type === 'Received') {
+        actions = `<span style="font-size:0.85rem;color:#10b981;font-weight:600;"><i class="fa-solid fa-circle-check"></i> Paid</span>`;
+      } else {
+        actions = `<span style="font-size:0.8rem;color:var(--text-muted);"><i class="fa-solid fa-lock"></i> Auto</span>`;
+      }
+
+      let amountColor = 'var(--text-primary)';
+      if (type === 'Received') amountColor = 'var(--success)';
+      else if (type === 'Owed') amountColor = '#a855f7';
+      else if (type === 'Advance') amountColor = '#fb923c';
+      else amountColor = 'var(--danger)';
+
+      return `<tr>
+        <td>${fmtDate(item.date)}</td>
+        <td>
+          <div style="font-weight:600;margin-bottom:0.2rem;">${esc(item.person_name)}</div>
+          ${sourceBadge}
+        </td>
+        <td>${type}</td>
+        <td style="color:${amountColor}; font-weight:600;">${fmtCurrency(amt)}</td>
+        <td><span class="text-muted" style="font-size: 0.9rem;">${esc(item.remarks || '-')}</span></td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('expStatReceived').innerHTML = fmtCurrency(totalReceived);
+    document.getElementById('expStatGiven').innerHTML = fmtCurrency(totalGiven);
+    let owedElem = document.getElementById('expStatOwed');
+    if (owedElem) owedElem.innerHTML = fmtCurrency(totalOwed);
+    let advElem = document.getElementById('expStatAdvance');
+    if (advElem) advElem.innerHTML = fmtCurrency(totalAdvance);
+    const net = totalReceived - totalGiven;
+    const netColor = net >= 0 ? 'var(--success)' : 'var(--danger)';
+    document.getElementById('expStatNet').innerHTML = `<span style="color:${netColor};">${net >= 0 ? '+' : ''}${fmtCurrency(net)}</span>`;
+
+  } catch (err) {
+    tbody.innerHTML = errorRow(6);
+  }
+}
+
+async function submitExpense(e) {
+  e.preventDefault();
+  const body = {
+    date: document.getElementById('expDate').value,
+    person_name: document.getElementById('expPerson').value,
+    type: document.getElementById('expType').value,
+    amount: document.getElementById('expAmount').value,
+    remarks: document.getElementById('expRemarks').value,
+  };
+  
+  const btn = e.target.querySelector('button[type="submit"]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+
+  try {
+    await api('/api/expenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    showToast('Expense recorded', 'success');
+    cancelForm('expenseForm');
+    resetExpenseForm();
+    loadExpenses();
+  } catch (err) {
+    console.error("Expense Submission Error:", err);
+    showToast(err.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save'; }
+  }
+}
+
+async function deleteExpense(id) {
+  if (!confirm('Are you sure you want to delete this manual expense entry?')) return;
+  try {
+    await api(`/api/expenses/${id}`, { method: 'DELETE' });
+    showToast('Expense deleted', 'success');
+    fetchExpenses();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function resetExpenseForm() {
+  ['expId', 'expDate', 'expPerson', 'expAmount', 'expRemarks'].forEach(id => {
+    if (document.getElementById(id)) document.getElementById(id).value = '';
+  });
+  if (document.getElementById('expType')) document.getElementById('expType').value = 'Given';
+}
+
+function updateDateDisplay(dateStr) {
+  const display = document.getElementById('expenseFilterDisplay');
+  if (!display) return;
+  if (!dateStr) {
+    display.textContent = 'All History';
+    return;
+  }
+  
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  
+  if (dateStr === today) {
+    display.textContent = 'Today';
+    return;
+  }
+  
+  const selectedDate = new Date(dateStr);
+  if (isNaN(selectedDate.getTime())) {
+    display.textContent = dateStr;
+    return;
+  }
+  const options = { day: 'numeric', month: 'short', year: 'numeric' };
+  display.textContent = selectedDate.toLocaleDateString('en-GB', options);
+}
+
+window.receiveTripPayment = async function(tripId, personName, amount) {
+  const inputAmount = prompt(`Trip #${tripId} (${personName})\nRemaining Owed: ₹${amount}\n\nEnter the payment amount you are receiving now:`, amount);
+  if (inputAmount === null) return;
+  const payAmt = parseFloat(inputAmount);
+  if (isNaN(payAmt) || payAmt <= 0) return showToast('Invalid amount', 'error');
+
+  try {
+    const btn = event.currentTarget || event.target;
+    if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    await api(`/api/trips/${tripId}/payment`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount_received_add: payAmt })
+    });
+    showToast('Payment partially/fully received!', 'success');
+    fetchExpenses();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+};
+
+window.markTripAsPaid = async function(tripId, btn) {
+  if (!confirm('Mark this trip freight as RECEIVED? This cannot be undone.')) return;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  try {
+    await api(`/api/expenses/trips/${tripId}/mark-paid`, { method: 'PATCH' });
+    showToast('Trip marked as Received!', 'success');
+    fetchExpenses();
+  } catch (err) {
+    showToast(err.message || 'Failed to update trip.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Mark Paid';
+  }
+};

@@ -9,6 +9,7 @@ const poolConfig = {
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  dateStrings: true,
 };
 
 if (process.env.DB_SSL === "true") {
@@ -133,6 +134,28 @@ const pool = mysql.createPool(poolConfig);
         AND COALESCE(tx.tx_count, 0) = 0
     `);
     console.log("Migration: Seeded customer opening payments where missing");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS daily_expenses (
+        expense_id INT NOT NULL AUTO_INCREMENT,
+        date DATE NOT NULL,
+        person_name VARCHAR(100) NOT NULL,
+        type ENUM('Received', 'Given', 'Advance') NOT NULL,
+        amount DECIMAL(12, 2) NOT NULL,
+        remarks VARCHAR(255) DEFAULT NULL,
+        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (expense_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    `);
+    console.log("Migration: Ensured daily_expenses table exists");
+
+    // Add payment_received flag to trips if not present
+    const [tripCols] = await pool.query(`SHOW COLUMNS FROM trips LIKE 'payment_received'`);
+    if (tripCols.length === 0) {
+      await pool.query(`ALTER TABLE trips ADD COLUMN payment_received TINYINT(1) NOT NULL DEFAULT 0`);
+      console.log("Migration: Added payment_received column to trips");
+    }
+
   } catch (err) {
     console.error("MySQL connection/migration failed:", err.message);
   }

@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
-  <link rel="stylesheet" href="/style.css?v=20">
+  <link rel="stylesheet" href="/style.css?v=21">
 </head>
 
 <body>
@@ -212,8 +212,10 @@
         <li class="menu-item" id="menu-fuel" onclick="loadFuel()">
           <i class="fa-solid fa-gas-pump"></i><span>Fuel</span>
         </li>
-        <li class="menu-item" id="menu-settings" onclick="toggleSettingsMenu(event)">
+        <li class="menu-item" id="menu-expenses" onclick="loadExpenses()">
+          <i class="fa-solid fa-wallet"></i><span>Daily Expenses</span>
         </li>
+
       </ul>
 
       <!-- Sidebar Footer -->
@@ -534,7 +536,7 @@
                         style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Maintenance
                       Note</label>
                     <input type="text" id="trkMaintenance" value="Not Required"
-                      placeholder="e.g. Oil Change, Tyre ReplacementÃ¢â‚¬Â¦">
+                      placeholder="e.g. Oil Change, Tyre Replacement…">
                   </div>
                 </div>
                 <div class="form-actions">
@@ -1197,12 +1199,12 @@
                 </div>
               </div>
 
-              <div class="table-responsive">
-                <table class="data-table">
+              <div class="table-responsive fuel-table-responsive">
+                <table class="data-table fuel-data-table">
                   <thead>
                     <tr>
-                      <th>#</th>
-                      <th>Truck</th>
+                      <th class="fuel-col-serial">#</th>
+                      <th class="fuel-col-truck">Truck</th>
                       <th>Driver</th>
                       <th>Fuel Volume
                         <button type="button" title="Sort ascending" onclick="toggleFuelSort('liters')" style="background:none;border:none;padding:0 0 0 3px;margin:0;color:var(--text-muted);font-size:0.72rem;line-height:1;cursor:pointer;vertical-align:middle;">
@@ -1274,6 +1276,155 @@
             </section>
           </div>
 
+        </div>
+
+        <!-- ===== EXPENSES VIEW ===== -->
+        <div id="view-expenses" class="view-section" style="display:none">
+
+          <!-- Expenses Stat Cards -->
+          <section class="metrics" style="margin-bottom:1.5rem; gap:1.2rem;">
+            <div class="metric-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), var(--bg-secondary)); border: 1px solid rgba(16, 185, 129, 0.3); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.05); position:relative; overflow:hidden;">
+              <div style="position:absolute; top:-20px; right:-20px; width:80px; height:80px; background:rgba(16, 185, 129, 0.1); border-radius:50%; filter:blur(15px);"></div>
+              <h4 style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; font-weight:600;"><i class="fa-solid fa-arrow-down" style="color:#10b981; margin-right:6px;"></i> Total Received</h4>
+              <div class="value-row" style="margin-top:0.8rem;">
+                <p id="expStatReceived" style="font-size:1.8rem; font-weight:700; color:var(--text-primary);">&#8377;0</p>
+              </div>
+            </div>
+            <div class="metric-card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), var(--bg-secondary)); border: 1px solid rgba(239, 68, 68, 0.2); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.05); position:relative; overflow:hidden;">
+              <div style="position:absolute; top:-20px; right:-20px; width:80px; height:80px; background:rgba(239, 68, 68, 0.1); border-radius:50%; filter:blur(15px);"></div>
+              <h4 style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; font-weight:600;"><i class="fa-solid fa-arrow-up" style="color:#ef4444; margin-right:6px;"></i> Total Given</h4>
+              <div class="value-row" style="margin-top:0.8rem;">
+                <p id="expStatGiven" style="font-size:1.8rem; font-weight:700; color:var(--text-primary);">&#8377;0</p>
+              </div>
+            </div>
+            <div class="metric-card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), var(--bg-secondary)); border: 1px solid rgba(59, 130, 246, 0.3); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.05); position:relative; overflow:hidden;">
+              <div style="position:absolute; top:-20px; right:-20px; width:80px; height:80px; background:rgba(59, 130, 246, 0.1); border-radius:50%; filter:blur(15px);"></div>
+              <h4 style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; font-weight:600;"><i class="fa-solid fa-scale-balanced" style="color:#3b82f6; margin-right:6px;"></i> Net Balance</h4>
+              <div class="value-row" style="margin-top:0.8rem;">
+                <p id="expStatNet" style="font-size:1.8rem; font-weight:700; color:var(--text-primary);">&#8377;0</p>
+              </div>
+            </div>
+            <div class="metric-card" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), var(--bg-secondary)); border: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 0 4px 15px rgba(168, 85, 247, 0.05); position:relative; overflow:hidden;">
+              <div style="position:absolute; top:-20px; right:-20px; width:80px; height:80px; background:rgba(168, 85, 247, 0.1); border-radius:50%; filter:blur(15px);"></div>
+              <h4 style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; font-weight:600;"><i class="fa-solid fa-clock-rotate-left" style="color:#a855f7; margin-right:6px;"></i> Total Owed</h4>
+              <div class="value-row" style="margin-top:0.8rem;">
+                <p id="expStatOwed" style="font-size:1.8rem; font-weight:700; color:var(--text-primary);">&#8377;0</p>
+              </div>
+            </div>
+            <div class="metric-card" style="background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), var(--bg-secondary)); border: 1px solid rgba(251, 146, 60, 0.3); box-shadow: 0 4px 15px rgba(251, 146, 60, 0.05); position:relative; overflow:hidden;">
+              <div style="position:absolute; top:-20px; right:-20px; width:80px; height:80px; background:rgba(251, 146, 60, 0.1); border-radius:50%; filter:blur(15px);"></div>
+              <h4 style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; font-weight:600;"><i class="fa-solid fa-hand-holding-dollar" style="color:#fb923c; margin-right:6px;"></i> Advances</h4>
+              <div class="value-row" style="margin-top:0.8rem;">
+                <p id="expStatAdvance" style="font-size:1.8rem; font-weight:700; color:var(--text-primary);">&#8377;0</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="tables">
+            <div class="table-header" style="display:flex; flex-wrap:wrap; gap:1.5rem; justify-content:space-between; align-items:center; background:linear-gradient(180deg, var(--bg-secondary), rgba(30, 41, 59, 0.4)); padding:1.2rem; border-radius:12px; border:1px solid rgba(255,255,255,0.05); box-shadow:0 8px 32px rgba(0,0,0,0.15)">
+              <h3 style="margin:0; display:flex; align-items:center; font-size:1.3rem;">
+                <div style="background:rgba(59,130,246,0.15); width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-right:0.8rem;">
+                  <i class="fa-solid fa-book-journal-whills" style="color:#3b82f6; font-size:1.2rem;"></i>
+                </div>
+                Daily Cashbook
+              </h3>
+              <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+                <div class="elegant-date-trigger" onclick="try{ document.getElementById('expenseFilterDate').showPicker(); }catch(e){}" style="position:relative; background: linear-gradient(145deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05)); border: 1px solid rgba(59,130,246,0.3); border-radius: 30px; padding: 0.5rem 1.2rem; cursor: pointer; display: flex; align-items: center; gap: 0.6rem; transition: 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                  <i class="fa-regular fa-calendar-days" style="color:#60a5fa; font-size:1.1rem;"></i>
+                  <span id="expenseFilterDisplay" style="color:white; font-weight:600; font-size:0.95rem; letter-spacing:0.3px;">Today</span>
+                  <i class="fa-solid fa-chevron-down" style="color:rgba(255,255,255,0.4); font-size:0.8rem; margin-left:0.4rem;"></i>
+                  <input type="date" id="expenseFilterDate" style="position:absolute; opacity:0; width:0; height:0; border:none; pointer-events:none;" onchange="updateDateDisplay(this.value); fetchExpenses()">
+                </div>
+                <button class="btn-secondary" style="padding:0.6rem 1.2rem; border-radius:8px; display:flex; align-items:center; font-weight:600; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-muted); cursor:pointer; transition:0.3s;" onclick="document.getElementById('expenseFilterDate').value=''; updateDateDisplay(''); fetchExpenses();">
+                  <i class="fa-solid fa-timeline" style="margin-right:0.5rem; font-size:1.1rem;"></i> All History
+                </button>
+                <button class="btn-primary" style="padding:0.6rem 1.2rem; border-radius:8px; display:flex; align-items:center; font-weight:600; box-shadow:0 4px 12px rgba(59,130,246,0.3)" onclick="resetExpenseForm(); document.getElementById('expenseForm').style.display='block'; document.getElementById('expenseForm').scrollIntoView({behavior:'smooth'});">
+                  <i class="fa-solid fa-plus" style="margin-right:0.5rem; font-size:1.1rem;"></i> New Entry
+                </button>
+              </div>
+            </div>
+
+            <!-- Type Filter Pills -->
+            <div id="expenseTypePills" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem; margin-bottom:0.5rem;">
+              <button onclick="setExpenseTypeFilter('all', this)" class="type-pill active-pill" data-filter="all"
+                style="padding:0.35rem 1rem; border-radius:30px; font-size:0.82rem; font-weight:600; cursor:pointer; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.1); color:white; transition:0.2s;">
+                All
+              </button>
+              <button onclick="setExpenseTypeFilter('Received', this)" class="type-pill" data-filter="Received"
+                style="padding:0.35rem 1rem; border-radius:30px; font-size:0.82rem; font-weight:600; cursor:pointer; border:1px solid rgba(16,185,129,0.3); background:rgba(16,185,129,0.08); color:#10b981; transition:0.2s;">
+                <i class="fa-solid fa-arrow-down" style="margin-right:4px;"></i>Received
+              </button>
+              <button onclick="setExpenseTypeFilter('Given', this)" class="type-pill" data-filter="Given"
+                style="padding:0.35rem 1rem; border-radius:30px; font-size:0.82rem; font-weight:600; cursor:pointer; border:1px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.08); color:#ef4444; transition:0.2s;">
+                <i class="fa-solid fa-arrow-up" style="margin-right:4px;"></i>Given
+              </button>
+              <button onclick="setExpenseTypeFilter('Advance', this)" class="type-pill" data-filter="Advance"
+                style="padding:0.35rem 1rem; border-radius:30px; font-size:0.82rem; font-weight:600; cursor:pointer; border:1px solid rgba(251,146,60,0.3); background:rgba(251,146,60,0.08); color:#fb923c; transition:0.2s;">
+                <i class="fa-solid fa-hand-holding-dollar" style="margin-right:4px;"></i>Advance
+              </button>
+              <button onclick="setExpenseTypeFilter('Owed', this)" class="type-pill" data-filter="Owed"
+                style="padding:0.35rem 1rem; border-radius:30px; font-size:0.82rem; font-weight:600; cursor:pointer; border:1px solid rgba(168,85,247,0.3); background:rgba(168,85,247,0.08); color:#a855f7; transition:0.2s;">
+                <i class="fa-solid fa-clock-rotate-left" style="margin-right:4px;"></i>Owed
+              </button>
+            </div>
+
+            <!-- Add Expense Form -->
+            <div id="expenseForm" class="form-panel" style="display:none">
+              <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-color);">
+                <i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary);font-size:1.1rem;"></i>
+                <h4 style="margin:0;font-size:1rem;" id="expenseFormTitle">Add Manual Entry</h4>
+              </div>
+              <form onsubmit="submitExpense(event)">
+                <input type="hidden" id="expId">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-calendar-day" style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Date *</label>
+                    <input type="date" id="expDate" required>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-user" style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Person Name *</label>
+                    <input type="text" id="expPerson" placeholder="e.g. Employee Name, Vendor" required>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-arrow-right-arrow-left" style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Type *</label>
+                    <select id="expType" required>
+                      <option value="Received">Received</option>
+                      <option value="Given">Given</option>
+                      <option value="Advance">Advance</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fa-solid fa-indian-rupee-sign" style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Amount *</label>
+                    <input type="number" id="expAmount" min="0" step="0.01" placeholder="e.g. 500" required>
+                  </div>
+                  <div class="form-group" style="grid-column: 1 / -1;">
+                    <label><i class="fa-solid fa-comment-dots" style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Remarks</label>
+                    <input type="text" id="expRemarks" placeholder="e.g. Salary Advance, Office Supplies">
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+                  <button type="button" class="btn-secondary" onclick="cancelForm('expenseForm')"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Person Name</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Remarks</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="expensesTableBody"></tbody>
+              </table>
+            </div>
+          </section>
         </div>
 
         <!-- ===== REPORTS VIEW ===== -->
@@ -1527,7 +1678,7 @@
                     <label><i class="fa-solid fa-note-sticky"
                         style="margin-right:0.3rem;color:var(--text-muted);font-size:0.8rem;"></i>Additional
                       Notes</label>
-                    <input type="text" id="mtnDesc" placeholder="Any extra details about the serviceÃ¢â‚¬Â¦">
+                    <input type="text" id="mtnDesc" placeholder="Any extra details about the service…">
                   </div>
                 </div>
                 <div class="form-actions">
@@ -1712,7 +1863,7 @@
   <div id="toast" class="toast"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-  <script src="/app.js?v=20"></script>
+  <script src="/app.js?v=21"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

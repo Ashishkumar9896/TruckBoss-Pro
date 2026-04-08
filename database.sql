@@ -273,6 +273,27 @@ INSERT INTO `users` VALUES
 (2,'admin@gmail.com','$2a$12$yfMv124IcqJyqKROtF2IJ./Zcu1FiC4Zr/RMhI1a68lybak1lHx5e','Admin','admin','2026-03-26 12:42:42');
 ALTER TABLE `users` ENABLE KEYS;
 UNLOCK TABLES;
+
+DROP TABLE IF EXISTS `daily_expenses`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8mb4;
+CREATE TABLE `daily_expenses` (
+  `expense_id` int NOT NULL AUTO_INCREMENT,
+  `date` date NOT NULL,
+  `person_name` varchar(100) NOT NULL,
+  `type` enum('Received','Given','Advance') NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `remarks` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`expense_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+SET character_set_client = @saved_cs_client;
+
+LOCK TABLES `daily_expenses` WRITE;
+ALTER TABLE `daily_expenses` DISABLE KEYS;
+ALTER TABLE `daily_expenses` ENABLE KEYS;
+UNLOCK TABLES;
+
 SET TIME_ZONE=@OLD_TIME_ZONE;
 
 SET SQL_MODE=@OLD_SQL_MODE;

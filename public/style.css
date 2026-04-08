@@ -781,12 +781,44 @@ select {
 }
 .metric-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); border-color: rgba(59,130,246,0.4); }
 .metric-card h4 { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 0.5px; }
-.metric-card .value-row { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
-.metric-card .value-row p { font-size: 2rem; font-weight: 800; color: var(--text-main); margin: 0; }
+.metric-card .value-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 0.75rem; margin-top: auto; }
+.metric-card .value-row p {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: clamp(1.45rem, 1.8vw, 2rem);
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  letter-spacing: -0.03em;
+}
+.metric-card .value-row p.metric-value-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148,163,184,0.45) transparent;
+  cursor: ew-resize;
+  padding-bottom: 0.15rem;
+  -webkit-overflow-scrolling: touch;
+}
+.metric-card .value-row p.metric-value-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.metric-card .value-row p.metric-value-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148,163,184,0.45);
+  border-radius: 999px;
+}
+.metric-card .value-row p.metric-value-fit {
+  overflow: visible;
+}
 .metric-card .value-row i { 
   font-size: 1.25rem; width: 44px; height: 44px; 
   display: flex; align-items: center; justify-content: center; 
-  border-radius: 12px; background: rgba(255,255,255,0.05); 
+  border-radius: 12px; background: rgba(255,255,255,0.05);
+  flex: 0 0 auto;
 }
 [data-theme="light"] .metric-card .value-row i { background: rgba(0,0,0,0.05); }
 
@@ -3064,7 +3096,7 @@ select {
   }
 
   .metric-card .value-row p {
-    font-size: 1.12rem;
+    font-size: clamp(1rem, 4.5vw, 1.12rem);
   }
 
   .metric-card .value-row i {
@@ -3176,4 +3208,42 @@ select {
   .export-buttons .hide-mobile {
     display: none !important;
   }
+
+  .fuel-data-table .fuel-col-serial,
+  .fuel-data-table .fuel-col-truck {
+    display: table-cell !important;
+  }
+
+  .fuel-data-table th.fuel-col-serial,
+  .fuel-data-table td.fuel-col-serial {
+    min-width: 48px;
+    width: 48px;
+    padding-left: 0.75rem;
+    padding-right: 0.5rem;
+    text-align: center;
+  }
+
+  .fuel-data-table th.fuel-col-truck,
+  .fuel-data-table td.fuel-col-truck {
+    min-width: 108px;
+    padding-left: 0.5rem;
+    padding-right: 0.75rem;
+  }
+
+  .fuel-data-table td.fuel-col-truck .status-badge {
+    max-width: 100%;
+    padding: 0.28rem 0.45rem;
+    gap: 0.2rem;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .fuel-data-table td.fuel-col-truck .status-badge i {
+    margin-right: 0 !important;
+  }
 }
+
+/* Premium Date Input Styles */
+
+.premium-date-input::-webkit-calendar-picker-indicator { filter: invert(0.8) sepia(1) hue-rotate(180deg); opacity: 0.7; cursor:pointer; }
+.premium-date-input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
