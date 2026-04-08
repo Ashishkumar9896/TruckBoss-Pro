@@ -54,35 +54,50 @@ const CUSTOMER_SUMMARY_QUERY = `
     c.name,
     c.phone_no,
     c.address,
-    c.amount_paid,
+    COALESCE(tx.total_received, c.amount_paid, 0) AS amount_paid,
     c.balance AS total_billed,
-    (c.amount_paid - c.balance) AS net,
-    GREATEST(c.balance - c.amount_paid, 0) AS current_due,
-    GREATEST(c.amount_paid - c.balance, 0) AS advance_amount,
+    (COALESCE(tx.total_received, c.amount_paid, 0) - c.balance) AS net,
+    GREATEST(c.balance - COALESCE(tx.total_received, c.amount_paid, 0), 0) AS current_due,
+    GREATEST(COALESCE(tx.total_received, c.amount_paid, 0) - c.balance, 0) AS advance_amount,
     c.due_date,
     c.follow_up_notes,
-    COUNT(t.trip_id) AS total_trips,
-    MAX(t.trip_date) AS last_trip_date,
-    MAX(tx.payment_date) AS last_payment_date,
+    COALESCE(ts.total_trips, 0) AS total_trips,
+    ts.last_trip_date,
+    tx.last_payment_date,
     CASE
-      WHEN c.amount_paid > c.balance THEN 'Advance'
-      WHEN GREATEST(c.balance - c.amount_paid, 0) = 0 THEN 'Paid'
+      WHEN COALESCE(tx.total_received, c.amount_paid, 0) > c.balance THEN 'Advance'
+      WHEN GREATEST(c.balance - COALESCE(tx.total_received, c.amount_paid, 0), 0) = 0 THEN 'Paid'
       WHEN c.due_date IS NOT NULL AND c.due_date < CURDATE() THEN 'Overdue'
       ELSE 'Partial'
     END AS payment_status,
     CASE
-      WHEN GREATEST(c.balance - c.amount_paid, 0) <= 0 THEN 'Settled'
-      WHEN DATEDIFF(CURDATE(), COALESCE(c.due_date, MAX(t.trip_date), DATE(c.created_at))) <= 7 THEN '0-7 days'
-      WHEN DATEDIFF(CURDATE(), COALESCE(c.due_date, MAX(t.trip_date), DATE(c.created_at))) <= 30 THEN '8-30 days'
+      WHEN GREATEST(c.balance - COALESCE(tx.total_received, c.amount_paid, 0), 0) <= 0 THEN 'Settled'
+      WHEN DATEDIFF(CURDATE(), COALESCE(c.due_date, ts.last_trip_date, DATE(c.created_at))) <= 7 THEN '0-7 days'
+      WHEN DATEDIFF(CURDATE(), COALESCE(c.due_date, ts.last_trip_date, DATE(c.created_at))) <= 30 THEN '8-30 days'
       ELSE '30+ days'
     END AS outstanding_age_bucket,
     CASE
-      WHEN GREATEST(c.balance - c.amount_paid, 0) <= 0 THEN NULL
-      ELSE GREATEST(DATEDIFF(CURDATE(), COALESCE(c.due_date, MAX(t.trip_date), DATE(c.created_at))), 0)
+      WHEN GREATEST(c.balance - COALESCE(tx.total_received, c.amount_paid, 0), 0) <= 0 THEN NULL
+      ELSE GREATEST(DATEDIFF(CURDATE(), COALESCE(c.due_date, ts.last_trip_date, DATE(c.created_at))), 0)
     END AS due_age_days
   FROM customers c
-  LEFT JOIN trips t ON c.customer_id = t.customer_id
-  LEFT JOIN customer_transactions tx ON c.customer_id = tx.customer_id
+  LEFT JOIN (
+    SELECT
+      customer_id,
+      COUNT(*) AS total_trips,
+      MAX(trip_date) AS last_trip_date
+    FROM trips
+    WHERE customer_id IS NOT NULL
+    GROUP BY customer_id
+  ) ts ON c.customer_id = ts.customer_id
+  LEFT JOIN (
+    SELECT
+      customer_id,
+      COALESCE(SUM(amount), 0) AS total_received,
+      MAX(payment_date) AS last_payment_date
+    FROM customer_transactions
+    GROUP BY customer_id
+  ) tx ON c.customer_id = tx.customer_id
 `;
 
 async function recalculateCustomerBalance(customerId) {
@@ -123,7 +138,6 @@ async function getRevenueChart() {
 async function getCustomers() {
   const [rows] = await pool.query(
     `${CUSTOMER_SUMMARY_QUERY}
-     GROUP BY c.customer_id
      ORDER BY c.created_at DESC`
   );
   return rows.map(normalizeCustomerRow);
@@ -132,8 +146,7 @@ async function getCustomers() {
 async function getCustomerById(id) {
   const [rows] = await pool.query(
     `${CUSTOMER_SUMMARY_QUERY}
-     WHERE c.customer_id = ?
-     GROUP BY c.customer_id`,
+     WHERE c.customer_id = ?`,
     [id]
   );
   return rows.map(normalizeCustomerRow);

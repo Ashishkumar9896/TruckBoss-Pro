@@ -80,8 +80,39 @@ async function getTripCustomerById(tripId) {
 
 async function updateTrip(id, truckId, driverId, customerId, amount, status, tripDate, materialType = null, quantity = null, destination = null, manualCustomerName = null) {
   const [result] = await pool.query(
-    "UPDATE trips SET truck_id=?, driver_id=?, customer_id=?, amount=?, status=?, trip_date=?, material_type=?, quantity=?, destination=?, manual_customer_name=? WHERE trip_id=?",
-    [truckId, driverId, customerId, amount, status, tripDate, materialType, quantity, destination, manualCustomerName, id]
+    `UPDATE trips
+     SET truck_id=?,
+         driver_id=?,
+         customer_id=?,
+         amount=?,
+         status=?,
+         trip_date=?,
+         material_type=?,
+         quantity=?,
+         destination=?,
+         manual_customer_name=?,
+         amount_received = LEAST(COALESCE(amount_received, 0), ?),
+         payment_received = CASE
+           WHEN LEAST(COALESCE(amount_received, 0), ?) >= ? THEN 1
+           ELSE 0
+         END
+     WHERE trip_id=?`,
+    [
+      truckId,
+      driverId,
+      customerId,
+      amount,
+      status,
+      tripDate,
+      materialType,
+      quantity,
+      destination,
+      manualCustomerName,
+      amount,
+      amount,
+      amount,
+      id,
+    ]
   );
   return result;
 }

@@ -1,27 +1,43 @@
 const mysql = require("mysql2/promise");
 
-const poolConfig = {
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "trucks",
-  port: Number(process.env.DB_PORT) || 4000,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  dateStrings: true,
-};
+const dbUrl = process.env.DATABASE_URL || process.env.MYSQL_URL;
+let pool;
 
-if (process.env.DB_SSL === "true") {
-  poolConfig.ssl = { rejectUnauthorized: true };
+if (dbUrl) {
+  // If a connection string is provided, we use it.
+  // We append dateStrings=true to ensure proper date handling if not already present.
+  const separator = dbUrl.includes('?') ? '&' : '?';
+  pool = mysql.createPool(dbUrl + separator + "dateStrings=true");
+} else {
+  const poolConfig = {
+    host: process.env.DB_HOST || "localhost",
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "",
+    database: process.env.DB_NAME || "trucks",
+    port: Number(process.env.DB_PORT) || 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    dateStrings: true,
+  };
+
+  if (process.env.DB_SSL === "true") {
+    // For many cloud providers, we need to enable SSL.
+    poolConfig.ssl = { rejectUnauthorized: true };
+  }
+  
+  pool = mysql.createPool(poolConfig);
 }
-
-const pool = mysql.createPool(poolConfig);
 
 (async () => {
   try {
+    // Basic connectivity check
     await pool.query("SELECT 1");
     console.log("MySQL connected successfully");
+
+    // For migrations, we might need the database name.
+    // We try to get it from the pool itself if possible, or from ENV.
+    const dbName = process.env.DB_NAME || "trucks";
 
     const [columns] = await pool.query("SHOW COLUMNS FROM trips");
     const columnNames = columns.map((c) => c.Field);
@@ -57,7 +73,7 @@ const pool = mysql.createPool(poolConfig);
         AND TABLE_NAME = 'trips'
         AND COLUMN_NAME = 'customer_id'
         AND REFERENCED_TABLE_NAME IS NOT NULL
-    `, [poolConfig.database]);
+    `, [dbName]);
 
     for (const fk of tripCustomerFks) {
       await pool.query(`ALTER TABLE trips DROP FOREIGN KEY \`${fk.CONSTRAINT_NAME}\``);
@@ -154,6 +170,12 @@ const pool = mysql.createPool(poolConfig);
     if (tripCols.length === 0) {
       await pool.query(`ALTER TABLE trips ADD COLUMN payment_received TINYINT(1) NOT NULL DEFAULT 0`);
       console.log("Migration: Added payment_received column to trips");
+    }
+
+    const [tripAmountReceivedCols] = await pool.query(`SHOW COLUMNS FROM trips LIKE 'amount_received'`);
+    if (tripAmountReceivedCols.length === 0) {
+      await pool.query(`ALTER TABLE trips ADD COLUMN amount_received DECIMAL(12, 2) NOT NULL DEFAULT 0.00`);
+      console.log("Migration: Added amount_received column to trips");
     }
 
   } catch (err) {

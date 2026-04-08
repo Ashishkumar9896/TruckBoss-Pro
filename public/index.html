@@ -322,100 +322,205 @@
               </div>
             </div>
           </section>
-          <section class="metrics" id="metricsContainer">
-            <div class="metric-card">
-              <h4>Today Collection</h4>
-              <div class="value-row">
-                <p id="todayCollectionVal">&#8377;0</p><i class="fa-solid fa-money-bill-wave icon-green"></i>
+          <section class="dashboard-kpi-grid" id="metricsContainer">
+            <div class="dashboard-kpi-card dashboard-kpi-card-feature dashboard-tone-emerald">
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Collections Today</span>
+                  <h4>Cash Received</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i class="fa-solid fa-money-bill-wave"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="todayCollectionVal">&#8377;0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="todayCollectionNote">Customer payments posted today</span>
               </div>
             </div>
-            <div class="metric-card">
-              <h4>Pending Dues</h4>
-              <div class="value-row">
-                <p id="pendingDuesVal">&#8377;0</p><i class="fa-solid fa-wallet icon-red"></i>
+
+            <div class="dashboard-kpi-card dashboard-kpi-card-feature dashboard-tone-rose">
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Open Exposure</span>
+                  <h4>Pending Dues</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i class="fa-solid fa-wallet"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="pendingDuesVal">&#8377;0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="pendingDuesNote">Current receivable after advances</span>
               </div>
             </div>
-            <div class="metric-card">
-              <h4>Active Trips</h4>
-              <div class="value-row">
-                <p id="activeTripsVal">0</p><i class="fa-solid fa-route icon-orange"></i>
+
+            <div class="dashboard-kpi-card dashboard-tone-amber">
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Live Operations</span>
+                  <h4>Active Trips</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i class="fa-solid fa-route"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="activeTripsVal">0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="activeTripsNote">Trips marked pending or ongoing</span>
               </div>
             </div>
-            <div class="metric-card">
-              <h4>Idle Trucks</h4>
-              <div class="value-row">
-                <p id="idleTrucksVal">0</p><i class="fa-solid fa-truck icon-cyan"></i>
+
+            <div class="dashboard-kpi-card dashboard-tone-sky">
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Fleet Utilization</span>
+                  <h4>Idle Trucks</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i class="fa-solid fa-truck"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="idleTrucksVal">0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="idleTrucksNote">Available with no active assignment</span>
               </div>
             </div>
-            <div class="metric-card">
-              <h4>Total Trucks</h4>
-              <div class="value-row">
-                <p id="totalTrucks">0</p><i class="fa-solid fa-truck-ramp-box icon-blue"></i>
+
+            <div class="dashboard-kpi-card dashboard-tone-indigo">
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Fleet Base</span>
+                  <h4>Total Trucks</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="totalTrucks">0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="totalTrucksNote">Registered fleet units</span>
               </div>
             </div>
-            <div class="metric-card">
-              <h4>Total Drivers</h4>
-              <div class="value-row">
-                <p id="totalDriversVal">0</p><i class="fa-solid fa-id-card icon-cyan"></i>
+
+            <div class="dashboard-kpi-card dashboard-tone-slate">
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Workforce</span>
+                  <h4>Total Drivers</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i class="fa-solid fa-id-card"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="totalDriversVal">0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="totalDriversNote">Drivers available in directory</span>
               </div>
             </div>
-            <div class="metric-card">
-              <h4>Total Trips</h4>
-              <div class="value-row">
-                <p id="totalTripsVal">0</p><i class="fa-solid fa-route icon-orange"></i>
+
+            <div class="dashboard-kpi-card dashboard-tone-orange">
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Trip Volume</span>
+                  <h4>Total Trips</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i class="fa-solid fa-road"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="totalTripsVal">0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="totalTripsNote">All recorded trip bills</span>
               </div>
             </div>
-            <div class="metric-card" onclick="toggleRevenueView()"
-              style="cursor: pointer; position: relative; transition: transform 0.2s;"
-              onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'"
+
+            <div class="dashboard-kpi-card dashboard-tone-cyan dashboard-kpi-card-action" onclick="toggleRevenueView()"
               title="Click to toggle Today/Yesterday">
-              <h4 id="revenueDailyTitle">Today Revenue</h4>
-              <div class="value-row">
-                <p id="dailyRevenueVal">&#8377;0</p><i id="revenueDailyIcon" class="fa-solid fa-calendar-day icon-cyan"></i>
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Daily Billing Pulse</span>
+                  <h4 id="revenueDailyTitle">Today Revenue</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i id="revenueDailyIcon" class="fa-solid fa-calendar-day"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="dailyRevenueVal">&#8377;0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="dailyRevenueNote">Tap to compare with yesterday</span>
               </div>
             </div>
-            <div class="metric-card" onclick="toggleRevenueTotalView()"
-              style="cursor: pointer; position: relative; transition: transform 0.2s;"
-              onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'"
+
+            <div class="dashboard-kpi-card dashboard-tone-green dashboard-kpi-card-action" onclick="toggleRevenueTotalView()"
               title="Click to toggle Total Revenue/This Month Revenue">
-              <h4 id="revenueTotalTitle">Total Revenue</h4>
-              <div class="value-row">
-                <p id="totalRevenueVal">&#8377;0</p><i id="revenueTotalIcon" class="fa-solid fa-sack-dollar icon-green"></i>
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Commercial Scale</span>
+                  <h4 id="revenueTotalTitle">Total Revenue</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i id="revenueTotalIcon" class="fa-solid fa-sack-dollar"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="totalRevenueVal">&#8377;0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="totalRevenueNote">Tap to switch month vs lifetime</span>
               </div>
             </div>
 
-            <div class="metric-card" onclick="toggleProfitTotalView()"
-              style="cursor: pointer; position: relative; transition: transform 0.2s;"
-              onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'"
+            <div class="dashboard-kpi-card dashboard-tone-violet dashboard-kpi-card-action" onclick="toggleProfitTotalView()"
               title="Click to toggle Total Profit/This Month Profit">
-              <h4 id="profitTotalTitle"><span id="profitLabelText">Total Profit</span> <i
-                  class="fa-solid fa-circle-info"
-                  style="font-size: 0.8rem; cursor: help; color: var(--text-muted); margin-left: 4px;"
-                  title="Profit = Gross Revenue - Fuel Cost" onclick="event.stopPropagation()"></i></h4>
-              <div class="value-row">
-                <p id="profitVal">&#8377;0</p><i id="profitTotalIcon" class="fa-solid fa-money-bill-trend-up icon-green"></i>
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Margin Signal</span>
+                  <h4 id="profitTotalTitle"><span id="profitLabelText">Total Profit</span> <i
+                      class="fa-solid fa-circle-info dashboard-kpi-info"
+                      title="Profit = Gross Revenue - Fuel Cost" onclick="event.stopPropagation()"></i></h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i id="profitTotalIcon" class="fa-solid fa-money-bill-trend-up"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="profitVal">&#8377;0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="profitNote">Tap to switch month vs lifetime</span>
               </div>
             </div>
 
-            <div class="metric-card" onclick="toggleFuelTotalView()"
-              style="cursor: pointer; position: relative; transition: transform 0.2s;"
-              onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'"
+            <div class="dashboard-kpi-card dashboard-tone-red dashboard-kpi-card-action" onclick="toggleFuelTotalView()"
               title="Click to toggle Total Fuel/This Month Fuel">
-              <h4 id="fuelTotalTitle">Total Fuel Cost</h4>
-              <div class="value-row">
-                <p id="fuelExpensesVal">&#8377;0</p><i id="fuelTotalIcon" class="fa-solid fa-gas-pump icon-red"></i>
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Cost Pressure</span>
+                  <h4 id="fuelTotalTitle">Total Fuel Cost</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i id="fuelTotalIcon" class="fa-solid fa-gas-pump"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="fuelExpensesVal">&#8377;0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="fuelNote">Tap to switch month vs lifetime</span>
               </div>
             </div>
 
-            <div class="metric-card" onclick="switchView('maintenance')"
-              style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'"
-              onmouseout="this.style.transform='scale(1)'" title="View Maintenance Log">
-              <h4>Pending Services</h4>
-              <div class="value-row">
-                <p id="mtnStatPendingDashboard">0</p><i class="fa-solid fa-screwdriver-wrench icon-yellow"></i>
+            <div class="dashboard-kpi-card dashboard-tone-yellow dashboard-kpi-card-action" onclick="switchView('maintenance')"
+              title="View Maintenance Log">
+              <div class="dashboard-kpi-top">
+                <div>
+                  <span class="dashboard-kpi-label">Workshop Queue</span>
+                  <h4>Pending Services</h4>
+                </div>
+                <span class="dashboard-kpi-icon"><i class="fa-solid fa-screwdriver-wrench"></i></span>
+              </div>
+              <div class="dashboard-kpi-value-row">
+                <p id="mtnStatPendingDashboard">0</p>
+              </div>
+              <div class="dashboard-kpi-meta">
+                <span id="mtnPendingNote">Tap to open maintenance log</span>
               </div>
             </div>
-
           </section>
           <section class="charts">
             <div class="chart-container">
@@ -428,13 +533,15 @@
             </div>
           </section>
           <section class="charts">
-            <div class="chart-container">
-              <h4>Monthly Decision Widgets</h4>
-              <div id="decisionWidgets" style="display:grid;gap:0.75rem;"></div>
-            </div>
-            <div class="chart-container">
-              <h4>Recent Activity Feed</h4>
-              <div id="recentActivityFeed" style="display:grid;gap:0.75rem;max-height:340px;overflow:auto;"></div>
+            <div class="chart-container dashboard-insight-panel">
+              <div class="dashboard-insight-head">
+                <div>
+                  <span class="dashboard-insight-label">Monthly View</span>
+                  <h4>Decision Widgets</h4>
+                </div>
+                <span class="dashboard-insight-pill"><i class="fa-solid fa-wave-square"></i> Executive</span>
+              </div>
+              <div id="decisionWidgets" class="dashboard-decision-grid"></div>
             </div>
           </section>
           <section class="tables">
@@ -1816,6 +1923,47 @@
           <tbody id="custTxnModalBody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <div id="tripReceiveModal" class="modal-overlay" style="display:none">
+    <div class="modal-box trip-receive-modal">
+      <button class="close-btn" onclick="closeTripReceiveModal()">&times;</button>
+      <div class="trip-receive-header">
+        <div class="trip-receive-icon"><i class="fa-solid fa-money-bill-transfer"></i></div>
+        <div>
+          <div class="trip-receive-eyebrow">Cash Collection</div>
+          <h2>Receive Trip Payment</h2>
+          <p>Record the amount collected against this freight bill.</p>
+        </div>
+      </div>
+      <div class="trip-receive-summary">
+        <div class="trip-receive-summary-card">
+          <span>Trip</span>
+          <strong id="tripReceiveTripLabel">-</strong>
+        </div>
+        <div class="trip-receive-summary-card">
+          <span>Customer</span>
+          <strong id="tripReceiveCustomerLabel">-</strong>
+        </div>
+        <div class="trip-receive-summary-card trip-receive-summary-accent">
+          <span>Remaining Owed</span>
+          <strong id="tripReceiveRemainingLabel">₹0</strong>
+        </div>
+      </div>
+      <form onsubmit="submitTripReceivePayment(event)">
+        <input type="hidden" id="tripReceiveTripId">
+        <input type="hidden" id="tripReceiveMaxAmount">
+        <div class="form-group trip-receive-field">
+          <label for="tripReceiveAmount">Amount Receiving Now</label>
+          <input type="number" id="tripReceiveAmount" min="0.01" step="0.01" placeholder="Enter amount" required>
+          <small>Enter full or partial payment up to the remaining trip balance.</small>
+        </div>
+        <div class="form-actions trip-receive-actions">
+          <button type="button" class="btn-secondary" onclick="closeTripReceiveModal()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          <button type="submit" class="btn-primary" id="tripReceiveSubmitBtn"><i class="fa-solid fa-circle-check"></i> Receive Payment</button>
+        </div>
+      </form>
     </div>
   </div>
 

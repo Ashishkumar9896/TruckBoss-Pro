@@ -226,8 +226,9 @@ function esc(v) { return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 function fmtCurrency(v) { return `\u20B9${Number(v||0).toLocaleString('en-IN')}`; }
 function fmtDate(v) { return v ? String(v).split('T')[0] : '—'; }
 function countDigits(value) { return String(value || '').replace(/\D/g, '').length; }
+function pluralize(value, singular, plural = `${singular}s`) { return `${value} ${value === 1 ? singular : plural}`; }
 function applyMetricValueBehavior() {
-  document.querySelectorAll('.metric-card .value-row p').forEach((el) => {
+  document.querySelectorAll('.metric-card .value-row p, .dashboard-kpi-value-row p').forEach((el) => {
     const needsScroll = countDigits(el.textContent) > 8;
     el.classList.toggle('metric-value-scroll', needsScroll);
     el.classList.toggle('metric-value-fit', !needsScroll);
@@ -267,6 +268,87 @@ function applyMetricValueBehavior() {
     el.addEventListener('pointerleave', stop);
   });
 }
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function updateDashboardMetricNotes(metrics = {}, dueSoonCount = 0) {
+  const totalTrucks = Number(metrics.totalTrucks || 0);
+  const totalDrivers = Number(metrics.totalDrivers || 0);
+  const totalTrips = Number(metrics.totalTrips || 0);
+  const activeTrips = Number(metrics.activeTrips || 0);
+  const idleTrucks = Number(metrics.idleTrucks || 0);
+  const pendingDues = Number(metrics.pendingCustomerDues || 0);
+  const todayCollection = Number(metrics.todayCollection || 0);
+  const dailyRevenue = Number(metrics.dailyRevenue || 0);
+  const yesterdayRevenue = Number(metrics.yesterdayRevenue || 0);
+  const monthlyRevenue = Number(metrics.monthlyRevenue || 0);
+  const totalRevenue = Number(metrics.totalRevenue || 0);
+  const monthlyProfit = Number(metrics.monthlyProfit || 0);
+  const totalProfit = Number(metrics.profit || 0);
+  const monthlyFuel = Number(metrics.monthlyFuelExpenses || 0);
+  const totalFuel = Number(metrics.fuelExpenses || 0);
+
+  setText(
+    'todayCollectionNote',
+    todayCollection > 0 ? 'Customer payments posted to the ledger today' : 'No customer receipts posted yet today'
+  );
+  setText(
+    'pendingDuesNote',
+    pendingDues > 0 ? 'Net receivable after customer advances and posted receipts' : 'No open customer receivable right now'
+  );
+  setText(
+    'activeTripsNote',
+    activeTrips > 0 ? `${pluralize(activeTrips, 'trip')} currently pending or ongoing` : 'No trips are active at the moment'
+  );
+  setText(
+    'idleTrucksNote',
+    totalTrucks > 0 ? `${pluralize(idleTrucks, 'truck')} free out of ${totalTrucks}` : 'Add trucks to start tracking utilization'
+  );
+  setText(
+    'totalTrucksNote',
+    totalTrucks > 0 ? `${pluralize(totalTrucks, 'fleet unit')} in operations` : 'Fleet inventory has not been set up yet'
+  );
+  setText(
+    'totalDriversNote',
+    totalDrivers > 0 ? `${pluralize(totalDrivers, 'driver')} available in the roster` : 'No drivers added to the directory yet'
+  );
+  setText(
+    'totalTripsNote',
+    totalTrips > 0 ? `${pluralize(totalTrips, 'trip')} recorded across all customers` : 'Trip billing will appear here once loads are added'
+  );
+  setText(
+    'dailyRevenueNote',
+    window.currentRevenueView === 'today'
+      ? `Today vs yesterday ${fmtCurrency(yesterdayRevenue)}`
+      : `Yesterday booked against today ${fmtCurrency(dailyRevenue)}`
+  );
+  setText(
+    'totalRevenueNote',
+    window.currentRevTotalView === 'total'
+      ? `This month has billed ${fmtCurrency(monthlyRevenue)} so far`
+      : `Lifetime billing sits at ${fmtCurrency(totalRevenue)}`
+  );
+  setText(
+    'profitNote',
+    window.currentProfTotalView === 'total'
+      ? `This month margin currently ${fmtCurrency(monthlyProfit)}`
+      : `Lifetime profit currently ${fmtCurrency(totalProfit)}`
+  );
+  setText(
+    'fuelNote',
+    window.currentFuelTotalView === 'total'
+      ? `This month fuel spend is ${fmtCurrency(monthlyFuel)}`
+      : `Lifetime fuel spend is ${fmtCurrency(totalFuel)}`
+  );
+  setText(
+    'mtnPendingNote',
+    dueSoonCount > 0 ? `${pluralize(dueSoonCount, 'truck')} has crossed the service threshold` : 'No service alerts are pending right now'
+  );
+}
+
 function getProofDocumentUrl(value) {
   if (!value) return '';
   if (/^https?:\/\//i.test(value)) return value;
@@ -305,6 +387,16 @@ async function api(path, opts = {}) {
     d = raw ? JSON.parse(raw) : {};
   } catch (e) {
     d = {};
+  }
+
+  const authMessage = d.error || d.message || '';
+  const isAuthFailure = (r.status === 401 || r.status === 403)
+    && /token|required|unauthorized|expired/i.test(authMessage);
+
+  if (isAuthFailure && !/\/api\/auth\/(login|register)/.test(path)) {
+    logout();
+    showToast('Session expired. Please sign in again.', 'error');
+    throw new Error('Session expired. Please sign in again.');
   }
 
   if (!r.ok) {
@@ -411,7 +503,7 @@ async function loadNotifications() {
     if (trucksRes && trucksRes.length) {
       trucksRes.forEach(t => {
         notifs.push(`
-          <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--border-color);display:flex;gap:0.75rem;align-items:flex-start;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='transparent'" onclick="loadMaintenance(); document.getElementById('notifMenu').classList.remove('show');">
+          <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--border-color);display:flex;gap:0.75rem;align-items:flex-start;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='transparent'" onclick="focusNotificationTarget('maintenance-banner', '${t.truck_id}')">
             <div style="background:#fef3c7;color:#d97706;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <i class="fa-solid fa-wrench"></i>
             </div>
@@ -430,7 +522,7 @@ async function loadNotifications() {
       const pendingTrips = tripsRes.data.filter(t => (t.status || '').toLowerCase() === 'pending');
       pendingTrips.forEach(t => {
         notifs.push(`
-          <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--border-color);display:flex;gap:0.75rem;align-items:flex-start;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='transparent'" onclick="loadTrips(); document.getElementById('notifMenu').classList.remove('show');">
+          <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--border-color);display:flex;gap:0.75rem;align-items:flex-start;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--bg-dark)'" onmouseout="this.style.background='transparent'" onclick="focusNotificationTarget('trip', '${t.trip_id}')">
             <div style="background:#e0e7ff;color:#4f46e5;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <i class="fa-solid fa-route"></i>
             </div>
@@ -586,18 +678,96 @@ function switchView(name) {
   }
 }
 
+window.pendingViewHighlight = null;
+
+function queueViewHighlight(view, selector) {
+  window.pendingViewHighlight = { view, selector, attempts: 0 };
+}
+
+function pulseHighlightElement(el) {
+  if (!el) return false;
+  el.classList.remove('row-attention-highlight');
+  void el.offsetWidth;
+  el.classList.add('row-attention-highlight');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => el.classList.remove('row-attention-highlight'), 2400);
+  return true;
+}
+
+function applyPendingHighlight(view) {
+  const target = window.pendingViewHighlight;
+  if (!target || target.view !== view) return;
+  const el = document.querySelector(target.selector);
+  if (el) {
+    pulseHighlightElement(el);
+    window.pendingViewHighlight = null;
+    return;
+  }
+  target.attempts = (target.attempts || 0) + 1;
+  if (target.attempts >= 8) {
+    window.pendingViewHighlight = null;
+    return;
+  }
+  setTimeout(() => applyPendingHighlight(view), 180);
+}
+
+function focusNotificationTarget(type, id) {
+  const notifMenu = document.getElementById('notifMenu');
+  if (notifMenu) notifMenu.classList.remove('show');
+
+  const normalizedId = String(id || '').trim();
+  if (!normalizedId) return;
+
+  if (type === 'trip') {
+    appState.trips.page = 1;
+    appState.trips.limit = 500;
+    const tripCustomer = document.getElementById('tripFilterCustomer');
+    const tripDriver = document.getElementById('tripFilterDriver');
+    const tripTruck = document.getElementById('tripFilterTruck');
+    const tripDate = document.getElementById('tripFilterDate');
+    const tripStatus = document.getElementById('tripFilterStatus');
+    if (tripCustomer) tripCustomer.value = '';
+    if (tripDriver) tripDriver.value = '';
+    if (tripTruck) tripTruck.value = '';
+    if (tripDate) tripDate.value = '';
+    if (tripStatus) tripStatus.value = '';
+    queueViewHighlight('trips', `#trip-row-${normalizedId}`);
+    loadTrips();
+    return;
+  }
+
+  if (type === 'customer') {
+    queueViewHighlight('customers', `#customer-row-${normalizedId}`);
+    loadCustomers();
+    return;
+  }
+
+  if (type === 'truck') {
+    queueViewHighlight('trucks', `#truck-row-${normalizedId}`);
+    loadTrucks();
+    return;
+  }
+
+  if (type === 'maintenance-banner') {
+    appState.maintenance.page = 1;
+    queueViewHighlight('maintenance', `#pending-maintenance-chip-${normalizedId}, #maintenance-row-truck-${normalizedId}`);
+    loadMaintenance();
+  }
+}
+
 /* ==============================
   DASHBOARD SECTION
   ============================== */
 let revenueChart = null, fuelTrendChart = null;
 
-function buildDashboardAlertCard({ icon, title, meta = '', description = '', tone = 'warning' }) {
+function buildDashboardAlertCard({ icon, title, meta = '', description = '', tone = 'warning', onClick = '' }) {
   const toneClass = tone === 'danger' ? 'alert-warning-danger' : '';
   const metaHtml = meta ? `<div class="alert-warning-meta">${meta}</div>` : '';
   const descHtml = description ? `<div class="alert-warning-desc">${description}</div>` : '';
+  const clickAttr = onClick ? ` role="button" tabindex="0" onclick="${onClick}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${onClick}}"` : '';
 
   return `
-    <div class="alert-warning ${toneClass}">
+    <div class="alert-warning ${toneClass}"${clickAttr}>
       <i class="${icon}"></i>
       <div class="alert-warning-copy">
         <div class="alert-warning-title">${title}</div>
@@ -622,7 +792,32 @@ function buildPendingTripAlertCard(trip) {
     icon: 'fa-solid fa-route',
     title: `Pending Trip #${trip.trip_id}`,
     meta: `Truck ${esc(truckNo)} | ${esc(customerName)}`,
-    description: `${esc(material)} | ${esc(qtyText)} | ${esc(destination)} | ${esc(tripDate)}`
+    description: `${esc(material)} | ${esc(qtyText)} | ${esc(destination)} | ${esc(tripDate)}`,
+    onClick: `focusNotificationTarget('trip', '${trip.trip_id}')`
+  });
+}
+
+function buildRecentActivityAlertCard(item) {
+  const iconMap = {
+    trip: 'fa-solid fa-route',
+    customer: 'fa-solid fa-user-group',
+    payment: 'fa-solid fa-money-bill-wave',
+    fuel: 'fa-solid fa-gas-pump',
+    maintenance: 'fa-solid fa-screwdriver-wrench',
+    driver: 'fa-solid fa-id-card',
+    truck: 'fa-solid fa-truck'
+  };
+  const activityType = String(item.activity_type || '').toLowerCase();
+  const icon = iconMap[activityType] || 'fa-solid fa-clock-rotate-left';
+  const metaBits = [item.activity_type, item.meta].filter(Boolean).map((part) => esc(part)).join(' | ');
+  const activityDate = item.activity_at ? fmtDate(item.activity_at) : '';
+
+  return buildDashboardAlertCard({
+    icon,
+    title: esc(item.title || 'Recent activity'),
+    meta: [activityDate, metaBits].filter(Boolean).join(' | '),
+    description: 'Recent operational update',
+    tone: 'warning'
   });
 }
 
@@ -649,6 +844,7 @@ async function loadDashboard() {
     }
 
     document.getElementById('totalTrucks').textContent = m.totalTrucks || 0;
+    window.dashboardMetrics = m;
     document.getElementById('totalDriversVal').textContent = m.totalDrivers || 0;
     document.getElementById('totalTripsVal').textContent = m.totalTrips || 0;
     const todayCollectionEl = document.getElementById('todayCollectionVal');
@@ -731,6 +927,7 @@ async function loadDashboard() {
     // Update dashboard counter for pending maintenance
     const pnd = document.getElementById('mtnStatPendingDashboard');
     if (pnd) pnd.textContent = dueSoon.length;
+    updateDashboardMetricNotes(m, dueSoon.length);
 
     const alertsBox = document.getElementById('dashboardAlerts');
     const alertItems = [];
@@ -738,7 +935,11 @@ async function loadDashboard() {
       const dashboardNotifications = m.notifications.filter(n => n.notification_type !== 'pending_trip_completion');
       alertItems.push(...dashboardNotifications.slice(0, 6).map(n => buildDashboardAlertCard({
         icon: 'fa-solid fa-bell',
-        title: esc(n.message)
+        title: esc(n.message),
+        onClick:
+          n.notification_type === 'overdue_payment' || n.notification_type === 'payment_due_today'
+            ? `focusNotificationTarget('customer', '${String(n.notification_id).split('-').pop()}')`
+            : `focusNotificationTarget('truck', '${String(n.notification_id).split('-').pop()}')`
       })));
     }
 
@@ -753,7 +954,8 @@ async function loadDashboard() {
       alertItems.push(...dueTrucks.map(t => buildDashboardAlertCard({
         icon: 'fa-solid fa-triangle-exclamation',
         title: `Truck ${esc(t.truck_no)} needs manual service`,
-        description: esc(t.maintenance)
+        description: esc(t.maintenance),
+        onClick: `focusNotificationTarget('truck', '${t.truck_id}')`
       })));
     }
     
@@ -763,12 +965,20 @@ async function loadDashboard() {
         icon: 'fa-solid fa-wrench',
         title: `Truck ${esc(f.truck_no)} requires maintenance`,
         description: `${f.trips_since_service} trips since last service`,
-        tone: 'danger'
+        tone: 'danger',
+        onClick: `focusNotificationTarget('maintenance-banner', '${f.truck_id}')`
       })));
     }
 
+    const recentActivityItems = (m.recentActivity || []).slice(0, 8).map(buildRecentActivityAlertCard);
+    if (recentActivityItems.length > 0) {
+      alertItems.push(...recentActivityItems);
+    }
+
     if (alertItems.length) {
-      const summaryText = alertItems.length > 5 ? 'Scroll to view all active alerts' : 'Latest operational alerts';
+      const summaryText = alertItems.length > 5
+        ? 'Scroll to view alerts and recent operational updates'
+        : 'Latest alerts and recent operational updates';
       alertsBox.innerHTML = `
         <div class="dashboard-alerts-panel">
           <div class="dashboard-alerts-head">
@@ -792,7 +1002,6 @@ async function loadDashboard() {
 
     renderCharts(a.monthlyRevenue || [], a.monthlyFuelCost || []);
     renderDecisionWidgets(m, a);
-    renderRecentActivity(m.recentActivity || []);
     
     // Render maintenance forecast table rows
     const forecastTbody = document.getElementById('forecastTableBody');
@@ -841,6 +1050,7 @@ function toggleRevenueView() {
     val.textContent = fmtCurrency(window.todayRevenueAmt || 0);
     icon.className = 'fa-solid fa-calendar-day icon-cyan';
   }
+  updateDashboardMetricNotes(window.dashboardMetrics || {}, Number(document.getElementById('mtnStatPendingDashboard')?.textContent || 0));
   applyMetricValueBehavior();
 }
 
@@ -860,6 +1070,7 @@ function toggleRevenueTotalView() {
     val.textContent = fmtCurrency(window.totalRevenueAmt || 0);
     icon.className = 'fa-solid fa-sack-dollar icon-green';
   }
+  updateDashboardMetricNotes(window.dashboardMetrics || {}, Number(document.getElementById('mtnStatPendingDashboard')?.textContent || 0));
   applyMetricValueBehavior();
 }
 
@@ -879,6 +1090,7 @@ function toggleProfitTotalView() {
     val.textContent = fmtCurrency(window.totalProfitAmt || 0);
     icon.className = 'fa-solid fa-money-bill-trend-up icon-green';
   }
+  updateDashboardMetricNotes(window.dashboardMetrics || {}, Number(document.getElementById('mtnStatPendingDashboard')?.textContent || 0));
   applyMetricValueBehavior();
 }
 
@@ -898,6 +1110,7 @@ function toggleFuelTotalView() {
     val.textContent = fmtCurrency(window.totalFuelAmt || 0);
     icon.className = 'fa-solid fa-gas-pump icon-red';
   }
+  updateDashboardMetricNotes(window.dashboardMetrics || {}, Number(document.getElementById('mtnStatPendingDashboard')?.textContent || 0));
   applyMetricValueBehavior();
 }
 
@@ -1052,7 +1265,7 @@ async function loadTrucks() {
             <i class="fa-solid fa-circle-check" style="font-size:0.65rem;"></i>OK
            </span>`;
 
-      return `<tr>
+      return `<tr id="truck-row-${t.truck_id}" data-truck-id="${t.truck_id}">
         <td style="font-weight:600;color:var(--text-muted);">${i + 1}</td>
         <td><strong style="font-size:0.95rem;letter-spacing:0.02em;">${esc(t.truck_no)}</strong></td>
         <td>${driverBadge}</td>
@@ -1067,6 +1280,7 @@ async function loadTrucks() {
         </td>
       </tr>`;
     }).join('');
+    applyPendingHighlight('trucks');
   } catch (err) { tbody.innerHTML = errorRow(9); } finally { hideLoading(tc); }
 }
 
@@ -1275,14 +1489,89 @@ function renderDecisionWidgets(metrics, analytics) {
   const fuelTrend = (analytics.monthlyFuelCost || []).slice(-3).map(row => `${row.month}: ${fmtCurrency(row.fuelCost)}`).join(' | ') || 'No fuel trend';
   const maintenanceTrend = (analytics.monthlyMaintenanceCost || []).slice(-3).map(row => `${row.month}: ${fmtCurrency(row.maintenanceCost)}`).join(' | ') || 'No maintenance trend';
 
-  box.innerHTML = [
-    { title: 'Revenue vs Previous Month', value: `${revDelta >= 0 ? '+' : '-'}${fmtCurrency(Math.abs(revDelta))}`, sub: `Current ${fmtCurrency(metrics.monthlyRevenue || 0)} | Previous ${fmtCurrency(metrics.previousMonthRevenue || 0)}` },
-    { title: 'Collection vs Previous Month', value: `${collectionDelta >= 0 ? '+' : '-'}${fmtCurrency(Math.abs(collectionDelta))}`, sub: `Current ${fmtCurrency(metrics.monthlyCollection || 0)} | Previous ${fmtCurrency(metrics.previousMonthCollection || 0)}` },
-    { title: 'Top Customers This Month', value: topCustomers, sub: 'Billed customer ranking' },
-    { title: 'Most Profitable Truck', value: profitableTruck, sub: 'This month' },
-    { title: 'Fuel Cost Trend', value: fuelTrend, sub: `${fuelDelta >= 0 ? 'Up' : 'Down'} ${fmtCurrency(Math.abs(fuelDelta))} from previous month` },
-    { title: 'Maintenance Cost Trend', value: maintenanceTrend, sub: `${maintenanceDelta >= 0 ? 'Up' : 'Down'} ${fmtCurrency(Math.abs(maintenanceDelta))} from previous month` },
-  ].map(item => `<div style="padding:0.9rem 1rem;border:1px solid var(--border-color);border-radius:12px;background:rgba(255,255,255,0.02);"><div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.4rem;">${item.title}</div><div style="font-weight:700;margin-bottom:0.35rem;line-height:1.5;">${esc(item.value)}</div><div style="font-size:0.8rem;color:var(--text-muted);line-height:1.5;">${esc(item.sub)}</div></div>`).join('');
+  const formatDelta = (delta) => `${delta >= 0 ? '+' : '-'}${fmtCurrency(Math.abs(delta))}`;
+  const deltaTone = (delta) => delta > 0 ? 'is-positive' : delta < 0 ? 'is-negative' : 'is-neutral';
+  const deltaLabel = (delta, positiveWord = 'Up', negativeWord = 'Down') => delta > 0 ? positiveWord : delta < 0 ? negativeWord : 'Flat';
+
+  const cards = [
+    {
+      kicker: 'Revenue',
+      title: 'Revenue vs Previous Month',
+      value: formatDelta(revDelta),
+      sub: `Current ${fmtCurrency(metrics.monthlyRevenue || 0)} | Previous ${fmtCurrency(metrics.previousMonthRevenue || 0)}`,
+      icon: 'fa-chart-column',
+      tone: deltaTone(revDelta),
+      chipText: `${deltaLabel(revDelta)} this month`,
+      chipTone: deltaTone(revDelta)
+    },
+    {
+      kicker: 'Collections',
+      title: 'Collection vs Previous Month',
+      value: formatDelta(collectionDelta),
+      sub: `Current ${fmtCurrency(metrics.monthlyCollection || 0)} | Previous ${fmtCurrency(metrics.previousMonthCollection || 0)}`,
+      icon: 'fa-money-bill-trend-up',
+      tone: deltaTone(collectionDelta),
+      chipText: `${deltaLabel(collectionDelta)} in cash flow`,
+      chipTone: deltaTone(collectionDelta)
+    },
+    {
+      kicker: 'Customers',
+      title: 'Top Customers This Month',
+      value: topCustomers,
+      sub: 'Billed customer ranking based on this month activity',
+      icon: 'fa-users',
+      tone: 'is-insight',
+      chipText: `${pluralize((metrics.topCustomersThisMonth || []).slice(0, 3).length, 'leader')}`,
+      chipTone: 'is-neutral'
+    },
+    {
+      kicker: 'Fleet Margin',
+      title: 'Most Profitable Truck',
+      value: profitableTruck,
+      sub: 'Best net-profit performer in the current month',
+      icon: 'fa-truck-fast',
+      tone: 'is-positive',
+      chipText: 'Operational winner',
+      chipTone: 'is-positive'
+    },
+    {
+      kicker: 'Fuel',
+      title: 'Fuel Cost Trend',
+      value: fuelTrend,
+      sub: `${deltaLabel(fuelDelta, 'Higher', 'Lower')} by ${fmtCurrency(Math.abs(fuelDelta))} compared with the previous month`,
+      icon: 'fa-gas-pump',
+      tone: fuelDelta > 0 ? 'is-negative' : fuelDelta < 0 ? 'is-positive' : 'is-neutral',
+      chipText: fuelDelta > 0 ? 'Cost pressure up' : fuelDelta < 0 ? 'Efficiency improved' : 'No change',
+      chipTone: fuelDelta > 0 ? 'is-negative' : fuelDelta < 0 ? 'is-positive' : 'is-neutral'
+    },
+    {
+      kicker: 'Maintenance',
+      title: 'Maintenance Cost Trend',
+      value: maintenanceTrend,
+      sub: `${deltaLabel(maintenanceDelta, 'Higher', 'Lower')} by ${fmtCurrency(Math.abs(maintenanceDelta))} compared with the previous month`,
+      icon: 'fa-screwdriver-wrench',
+      tone: maintenanceDelta > 0 ? 'is-negative' : maintenanceDelta < 0 ? 'is-positive' : 'is-neutral',
+      chipText: maintenanceDelta > 0 ? 'Workshop spend up' : maintenanceDelta < 0 ? 'Workshop spend down' : 'Stable spend',
+      chipTone: maintenanceDelta > 0 ? 'is-negative' : maintenanceDelta < 0 ? 'is-positive' : 'is-neutral'
+    }
+  ];
+
+  box.innerHTML = cards.map((item) => `
+    <article class="dashboard-widget-card ${item.tone}">
+      <div class="dashboard-widget-head">
+        <div>
+          <span class="dashboard-widget-kicker">${esc(item.kicker)}</span>
+          <h5>${esc(item.title)}</h5>
+        </div>
+        <span class="dashboard-widget-icon"><i class="fa-solid ${item.icon}"></i></span>
+      </div>
+      <div class="dashboard-widget-value">${esc(item.value)}</div>
+      <div class="dashboard-widget-sub">${esc(item.sub)}</div>
+      <div class="dashboard-widget-footer">
+        <span class="dashboard-widget-chip ${item.chipTone}"><i class="fa-solid fa-signal"></i>${esc(item.chipText)}</span>
+      </div>
+    </article>
+  `).join('');
 }
 
 function renderRecentActivity(items) {
@@ -1292,7 +1581,38 @@ function renderRecentActivity(items) {
     box.innerHTML = `<div class="empty">No recent activity</div>`;
     return;
   }
-  box.innerHTML = items.map(item => `<div style="padding:0.85rem 1rem;border:1px solid var(--border-color);border-radius:12px;background:rgba(255,255,255,0.02);"><div style="display:flex;justify-content:space-between;gap:1rem;align-items:center;"><strong>${esc(item.title)}</strong><span style="font-size:0.78rem;color:var(--text-muted);">${fmtDate(item.activity_at)}</span></div><div style="font-size:0.82rem;color:var(--text-muted);margin-top:0.3rem;">${esc(item.activity_type || '')}${item.meta ? ` | ${esc(item.meta)}` : ''}</div></div>`).join('');
+  const iconMap = {
+    trip: 'fa-route',
+    customer: 'fa-user-group',
+    payment: 'fa-money-bill-wave',
+    fuel: 'fa-gas-pump',
+    maintenance: 'fa-screwdriver-wrench',
+    driver: 'fa-id-card',
+    truck: 'fa-truck'
+  };
+  box.innerHTML = items.map(item => {
+    const typeKey = String(item.activity_type || '').toLowerCase();
+    const icon = iconMap[typeKey] || 'fa-bolt';
+    const metaBits = [item.activity_type, item.meta].filter(Boolean);
+    return `
+      <article class="dashboard-activity-card">
+        <div class="dashboard-activity-row">
+          <span class="dashboard-activity-marker"><i class="fa-solid ${icon}"></i></span>
+          <div class="dashboard-activity-content">
+            <div class="dashboard-activity-top">
+              <h5 class="dashboard-activity-title">${esc(item.title || 'Activity')}</h5>
+              <span class="dashboard-activity-date">${fmtDate(item.activity_at)}</span>
+            </div>
+            <div class="dashboard-activity-detail">${esc(metaBits.join(' | ') || 'System activity update')}</div>
+            <div class="dashboard-activity-meta">
+              ${item.activity_type ? `<span class="dashboard-activity-badge"><i class="fa-solid fa-layer-group"></i>${esc(item.activity_type)}</span>` : ''}
+              ${item.meta ? `<span class="dashboard-activity-badge"><i class="fa-solid fa-circle-info"></i>${esc(item.meta)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
 }
 
 function ageBucketBadge(bucket) {
@@ -1613,7 +1933,7 @@ async function loadCustomers() {
       const followUp = c.follow_up_notes ? esc(c.follow_up_notes) : '<span style="color:var(--text-muted);">-</span>';
       const tripsBadge = `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);padding:3px 10px;border-radius:20px;font-size:0.82rem;font-weight:600;"><i class="fa-solid fa-route" style="font-size:0.65rem;"></i>${c.total_trips || 0}</span>`;
 
-      return `<tr>
+      return `<tr id="customer-row-${c.customer_id}" data-customer-id="${c.customer_id}">
         <td style="font-weight:600;color:var(--text-muted);">${i + 1}</td>
         <td>
           <div style="display:flex;align-items:flex-start;gap:0.75rem;">
@@ -1641,6 +1961,7 @@ async function loadCustomers() {
         </td>
       </tr>`;
     }).join('');
+    applyPendingHighlight('customers');
   } catch (err) {
     tbody.innerHTML = errorRow(11);
   } finally {
@@ -2023,7 +2344,7 @@ async function fetchTrips() {
         ? esc(manualCustomerName)
         : esc(t.customer_name || '—');
       
-      return `<tr>
+      return `<tr id="trip-row-${t.trip_id}" data-trip-id="${t.trip_id}">
         <td>${offset + i + 1}</td>
         <td>${esc(t.material_type || '—')}</td>
         <td>${t.quantity || 0} Tons</td>
@@ -2384,6 +2705,7 @@ async function fetchFuelData() {
         </td>
       </tr>`;
     }).join('');
+    applyPendingHighlight('maintenance');
   } catch (err) { tbody.innerHTML = errorRow(8); } finally { hideLoading(tc); }
 }
 
@@ -2577,7 +2899,7 @@ async function loadMaintenance() {
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
             ${pending.map(t => `
-              <div style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);padding:0.4rem 0.75rem;border-radius:8px;">
+              <div id="pending-maintenance-chip-${t.truck_id}" data-truck-id="${t.truck_id}" style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);padding:0.4rem 0.75rem;border-radius:8px;">
                 <i class="fa-solid fa-truck" style="color:#f59e0b;font-size:0.75rem;"></i>
                 <span style="font-weight:600;font-size:0.88rem;">${esc(t.truck_no)}</span>
                 <span style="color:var(--text-muted);font-size:0.8rem;">· ${esc(t.maintenance)}</span>
@@ -2674,7 +2996,7 @@ async function loadMaintenance() {
         : '—';
       const serviceLabel = m.service_type || serviceType;
       const notesLabel   = m.notes || notes;
-      return `<tr>
+      return `<tr id="maintenance-row-truck-${m.truck_id || ''}" data-truck-id="${m.truck_id || ''}">
         <td>${offset + i + 1}</td>
         <td><span class="status-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);font-weight:600;">
           <i class="fa-solid fa-truck" style="margin-right:4px;font-size:0.7rem;"></i>${esc(m.truck_no || '—')}
@@ -2697,6 +3019,7 @@ async function loadMaintenance() {
         </td>
       </tr>`;
     }).join('');
+    applyPendingHighlight('maintenance');
   } catch (err) { tbody.innerHTML = errorRow(8); } finally { hideLoading(tc); }
 }
 
@@ -2946,7 +3269,12 @@ function initRealtime() {
 (function () {
   const tk = localStorage.getItem('tbToken');
   const u = localStorage.getItem('tbUser');
-  if (tk && u) enterDashboard(JSON.parse(u));
+  if (!tk || !u) return;
+  try {
+    enterDashboard(JSON.parse(u));
+  } catch (err) {
+    logout();
+  }
 })();
 
 /* ------------------------------------------
@@ -3555,17 +3883,14 @@ function setExpenseTypeFilter(type, btn) {
 async function fetchExpenses() {
   const tbody = document.getElementById('expensesTableBody');
   try {
-    const res = await api('/api/expenses');
-    let data = res.data || [];
     const filterInput = document.getElementById('expenseFilterDate');
     const filterDate = filterInput ? filterInput.value : '';
     
-    // Filter by date
-    if (filterDate) {
-      data = data.filter(item => fmtDate(item.date) === filterDate);
-    }
+    // Server-side filtering is much faster for large datasets
+    const res = await api(`/api/expenses${filterDate ? `?date=${filterDate}` : ''}`);
+    let data = res.data || [];
 
-    // Filter by type
+    // Filter by type (this remains client-side as it's a minor UI toggle)
     const typeFilter = window._expTypeFilter || 'all';
     if (typeFilter !== 'all') {
       data = data.filter(item => item.type === typeFilter);
@@ -3587,15 +3912,18 @@ async function fetchExpenses() {
 
     tbody.innerHTML = data.map(item => {
       const amt = parseFloat(item.amount) || 0;
+      const pendingAmt = parseFloat(item.pending_amount) || 0;
       const type = item.type;
       
-      if (type === 'Received') totalReceived += amt;
-      else if (type === 'Owed') totalOwed += amt;
+      // Calculate cash-flow totals
+      if (type === 'Received' && !item.exclude_from_cash_totals) totalReceived += amt;
+      else if (type === 'Owed') totalOwed += pendingAmt; // Note: For statistics, we care about the pending part
       else if (type === 'Advance') totalAdvance += amt;
-      else totalGiven += amt; // Given
+      else if (type === 'Given') totalGiven += amt;
 
       let sourceBadge = '';
       if (item.source === 'trip') sourceBadge = '<span class="badge hide-mobile" style="background:#8b5cf6;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;">Trip</span>';
+      else if (item.source === 'customer') sourceBadge = '<span class="badge hide-mobile" style="background:#10b981;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;">Customer</span>';
       else if (item.source === 'fuel') sourceBadge = '<span class="badge hide-mobile" style="background:#f97316;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;">Fuel</span>';
       else if (item.source === 'maintenance') sourceBadge = '<span class="badge hide-mobile" style="background:#eab308;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;">Maint.</span>';
       else sourceBadge = '<span class="badge hide-mobile" style="background:#64748b;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;">Manual</span>';
@@ -3604,9 +3932,9 @@ async function fetchExpenses() {
       if (item.source === 'manual') {
         actions = `<button class="btn-icon" style="color:var(--danger);" onclick="deleteExpense(${item.id})"><i class="fa-solid fa-trash"></i></button>`;
       } else if (item.source === 'trip' && type === 'Owed') {
-        actions = `<button class="btn-primary" style="padding:0.25rem 0.75rem; font-size:0.75rem; border-radius:20px; background:linear-gradient(135deg,#10b981,#059669); border:none; box-shadow:0 3px 8px rgba(16,185,129,0.3); cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="markTripAsPaid(${item.id}, this)"><i class="fa-solid fa-circle-check"></i> Mark Paid</button>`;
-      } else if (item.source === 'trip' && type === 'Received') {
-        actions = `<span style="font-size:0.85rem;color:#10b981;font-weight:600;"><i class="fa-solid fa-circle-check"></i> Paid</span>`;
+        actions = `<button class="btn-primary" style="padding:0.25rem 0.75rem; font-size:0.75rem; border-radius:20px; background:linear-gradient(135deg,#10b981,#059669); border:none; box-shadow:0 3px 8px rgba(16,185,129,0.3); cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="receiveTripPayment(${item.id}, '${esc(item.person_name)}', ${pendingAmt})"><i class="fa-solid fa-money-bill-transfer"></i> Receive ₹${fmtCurrency(pendingAmt).replace('₹','')}</button>`;
+      } else if (item.source === 'trip' && type === 'Settled') {
+        actions = `<span style="font-size:0.85rem;color:#10b981;font-weight:600;"><i class="fa-solid fa-circle-check"></i> Settled</span>`;
       } else {
         actions = `<span style="font-size:0.8rem;color:var(--text-muted);"><i class="fa-solid fa-lock"></i> Auto</span>`;
       }
@@ -3614,8 +3942,17 @@ async function fetchExpenses() {
       let amountColor = 'var(--text-primary)';
       if (type === 'Received') amountColor = 'var(--success)';
       else if (type === 'Owed') amountColor = '#a855f7';
+      else if (type === 'Settled') amountColor = '#6366f1'; // Indigo for settlement
       else if (type === 'Advance') amountColor = '#fb923c';
       else amountColor = 'var(--danger)';
+
+      const displayType = type === 'Settled' ? '<i class="fa-solid fa-handshake" style="font-size:0.8rem;opacity:0.75;"></i> Settled' : type;
+      
+      // If trip is partially settled, show the balance note
+      let balanceNote = '';
+      if (item.source === 'trip' && type === 'Owed' && pendingAmt < amt) {
+        balanceNote = `<div style="font-size:0.7rem; color:#8b5cf6; margin-top:0.2rem;">Bal: ${fmtCurrency(pendingAmt)}</div>`;
+      }
 
       return `<tr>
         <td>${fmtDate(item.date)}</td>
@@ -3623,8 +3960,11 @@ async function fetchExpenses() {
           <div style="font-weight:600;margin-bottom:0.2rem;">${esc(item.person_name)}</div>
           ${sourceBadge}
         </td>
-        <td>${type}</td>
-        <td style="color:${amountColor}; font-weight:600;">${fmtCurrency(amt)}</td>
+        <td style="font-size:0.85rem; font-weight:500;">${displayType}</td>
+        <td style="font-weight:600;">
+          <div style="color:${amountColor};">${fmtCurrency(amt)}</div>
+          ${balanceNote}
+        </td>
         <td><span class="text-muted" style="font-size: 0.9rem;">${esc(item.remarks || '-')}</span></td>
         <td>${actions}</td>
       </tr>`;
@@ -3641,7 +3981,9 @@ async function fetchExpenses() {
     document.getElementById('expStatNet').innerHTML = `<span style="color:${netColor};">${net >= 0 ? '+' : ''}${fmtCurrency(net)}</span>`;
 
   } catch (err) {
-    tbody.innerHTML = errorRow(6);
+    const msg = err && err.message ? err.message : 'Failed to load expenses';
+    tbody.innerHTML = emptyRow(6, esc(msg));
+    showToast(msg, 'error');
   }
 }
 
@@ -3735,6 +4077,7 @@ window.receiveTripPayment = async function(tripId, personName, amount) {
     });
     showToast('Payment partially/fully received!', 'success');
     fetchExpenses();
+    if (typeof loadDashboard === 'function') loadDashboard(); // Sync dashboard stats
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -3748,9 +4091,72 @@ window.markTripAsPaid = async function(tripId, btn) {
     await api(`/api/expenses/trips/${tripId}/mark-paid`, { method: 'PATCH' });
     showToast('Trip marked as Received!', 'success');
     fetchExpenses();
+    if (typeof loadDashboard === 'function') loadDashboard(); // Sync dashboard stats
   } catch (err) {
     showToast(err.message || 'Failed to update trip.', 'error');
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Mark Paid';
   }
+};
+
+window.openTripReceiveModal = function(tripId, personName, amount) {
+  const amountInput = document.getElementById('tripReceiveAmount');
+  document.getElementById('tripReceiveTripId').value = tripId;
+  document.getElementById('tripReceiveMaxAmount').value = Number(amount || 0);
+  document.getElementById('tripReceiveTripLabel').textContent = `#${tripId}`;
+  document.getElementById('tripReceiveCustomerLabel').textContent = personName || '-';
+  document.getElementById('tripReceiveRemainingLabel').textContent = fmtCurrency(amount || 0);
+  amountInput.value = Number(amount || 0).toFixed(2);
+  openModal('tripReceiveModal');
+  setTimeout(() => {
+    amountInput.focus();
+    amountInput.select();
+  }, 30);
+};
+
+window.closeTripReceiveModal = function() {
+  document.getElementById('tripReceiveTripId').value = '';
+  document.getElementById('tripReceiveMaxAmount').value = '';
+  document.getElementById('tripReceiveAmount').value = '';
+  closeModal('tripReceiveModal');
+};
+
+window.submitTripReceivePayment = async function(e) {
+  e.preventDefault();
+  const tripId = Number(document.getElementById('tripReceiveTripId').value);
+  const maxAmount = Number(document.getElementById('tripReceiveMaxAmount').value || 0);
+  const payAmt = Number(document.getElementById('tripReceiveAmount').value);
+  if (!tripId) return showToast('Trip details are missing', 'error');
+  if (!Number.isFinite(payAmt) || payAmt <= 0) return showToast('Enter a valid amount', 'error');
+  if (maxAmount > 0 && payAmt - maxAmount > 0.0001) return showToast(`Amount cannot exceed ${fmtCurrency(maxAmount)}`, 'error');
+
+  const btn = document.getElementById('tripReceiveSubmitBtn');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Recording...';
+  }
+
+  try {
+    await api(`/api/trips/${tripId}/payment`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount_received_add: payAmt })
+    });
+    closeTripReceiveModal();
+    showToast('Payment recorded successfully', 'success');
+    fetchExpenses();
+    if (typeof loadDashboard === 'function') loadDashboard();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
+};
+
+window.receiveTripPayment = function(tripId, personName, amount) {
+  openTripReceiveModal(tripId, personName, amount);
 };

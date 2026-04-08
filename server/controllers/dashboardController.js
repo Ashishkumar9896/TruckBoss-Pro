@@ -81,15 +81,19 @@ async function getDashboardMetrics(req, res, next) {
                     WHERE YEAR(trip_date) = YEAR(CURDATE()) AND MONTH(trip_date) = MONTH(CURDATE()))
                    - (SELECT COALESCE(SUM(price), 0) FROM fuel_details
                       WHERE YEAR(fuel_date) = YEAR(CURDATE()) AND MONTH(fuel_date) = MONTH(CURDATE()))
+                   - (SELECT COALESCE(SUM(cost), 0) FROM maintenance_records
+                      WHERE YEAR(service_date) = YEAR(CURDATE()) AND MONTH(service_date) = MONTH(CURDATE()))
           ) AS monthlyProfit,
           (
             SELECT COALESCE(SUM(COALESCE(amount, 0)), 0) FROM trips
             WHERE DATE(trip_date) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
           ) AS yesterdayRevenue,
           (SELECT COALESCE(SUM(price), 0) FROM fuel_details) AS totalFuelExpenses,
+          (SELECT COALESCE(SUM(cost), 0) FROM maintenance_records) AS totalMaintExpenses,
           (
             (SELECT COALESCE(SUM(COALESCE(amount, 0)), 0) FROM trips) -
-            (SELECT COALESCE(SUM(price), 0) FROM fuel_details)
+            (SELECT COALESCE(SUM(price), 0) FROM fuel_details) -
+            (SELECT COALESCE(SUM(cost), 0) FROM maintenance_records)
           ) AS totalProfit`
     );
 

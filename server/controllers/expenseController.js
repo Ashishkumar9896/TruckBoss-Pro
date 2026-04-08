@@ -2,7 +2,8 @@ const expenseModel = require("../models/expenseModel");
 
 const getExpenses = async (req, res) => {
   try {
-    const expenses = await expenseModel.getUnifiedExpenses();
+    const { date } = req.query;
+    const expenses = await expenseModel.getUnifiedExpenses({ date });
     
     // Calculate summary metrics (Received, Given)
     // "Advance" is usually treated as a type of given/receivable, but let's separate it for clarity if needed. 
@@ -32,7 +33,11 @@ const getExpenses = async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching expenses:", err);
-    res.status(500).json({ success: false, message: "Failed to load expenses." });
+    res.status(500).json({
+      success: false,
+      message: err.sqlMessage || err.message || "Failed to load expenses.",
+      code: err.code || undefined,
+    });
   }
 };
 
@@ -77,11 +82,17 @@ const deleteManualExpense = async (req, res) => {
 const markTripPaid = async (req, res) => {
   try {
     const { id } = req.params;
-    const affected = await expenseModel.markTripPaymentReceived(id);
-    if (affected === 0) {
-      return res.status(404).json({ success: false, message: "Trip not found." });
+    const result = await expenseModel.markTripPaymentReceived(id);
+    if (!result.ok) {
+      if (result.code === "already_paid") {
+        return res.status(409).json({ success: false, message: result.message });
+      }
+      if (result.code === "not_found") {
+        return res.status(404).json({ success: false, message: result.message });
+      }
+      return res.status(400).json({ success: false, message: result.message || "Failed to update trip." });
     }
-    res.status(200).json({ success: true, message: "Trip marked as received." });
+    res.status(200).json({ success: true, message: result.message || "Trip marked as received." });
   } catch (err) {
     console.error("Error marking trip paid:", err);
     res.status(500).json({ success: false, message: "Failed to update trip." });

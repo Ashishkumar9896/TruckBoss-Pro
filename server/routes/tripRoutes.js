@@ -10,6 +10,7 @@ const {
   validateTrip,
   handleValidationErrors,
 } = require("../middleware/validation");
+const { recordTripPayment } = require("../models/expenseModel");
 
 const router = express.Router();
 
@@ -25,10 +26,14 @@ router.put("/trips/:id/payment", asyncHandler(async (req, res, next) => {
   try {
     const { id } = req.params;
     const { amount_received_add } = req.body;
-    const pool = require("../config/db");
-    const [result] = await pool.query("UPDATE trips SET amount_received = amount_received + ? WHERE trip_id = ?", [Number(amount_received_add) || 0, id]);
-    if (result.affectedRows === 0) return res.status(404).json({error: "Trip not found"});
-    return res.json({message: "Payment recorded successfully"});
+    const result = await recordTripPayment(id, amount_received_add, {
+      markFullyPaid: false,
+    });
+    if (!result.ok) {
+      if (result.code === "not_found") return res.status(404).json({ error: result.message });
+      return res.status(400).json({ error: result.message || "Payment could not be recorded." });
+    }
+    return res.json({ message: result.message, appliedAmount: result.appliedAmount });
   } catch (err) {
     next(err);
   }
