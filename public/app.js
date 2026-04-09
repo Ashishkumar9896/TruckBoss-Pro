@@ -1,5 +1,24 @@
 const API = "";
 
+const debounce = (fn, delay) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+};
+
+const throttle = (fn, limit) => {
+  let inThrottle;
+  return (...args) => {
+    if (!inThrottle) {
+      fn(...args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+};
+
 const appState = {
   socket: null,
   currentUser: null,
@@ -228,45 +247,56 @@ function fmtDate(v) { return v ? String(v).split('T')[0] : '—'; }
 function countDigits(value) { return String(value || '').replace(/\D/g, '').length; }
 function pluralize(value, singular, plural = `${singular}s`) { return `${value} ${value === 1 ? singular : plural}`; }
 function applyMetricValueBehavior() {
-  document.querySelectorAll('.metric-card .value-row p, .dashboard-kpi-value-row p').forEach((el) => {
-    const needsScroll = countDigits(el.textContent) > 8;
-    el.classList.toggle('metric-value-scroll', needsScroll);
-    el.classList.toggle('metric-value-fit', !needsScroll);
-    el.scrollLeft = 0;
-    el.title = needsScroll ? `${el.textContent} (drag or swipe left/right to view)` : el.textContent;
+  const cards = document.querySelectorAll('.metric-card .value-row p, .dashboard-kpi-value-row p');
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const needsScroll = countDigits(el.textContent) > 8;
+        el.classList.toggle('metric-value-scroll', needsScroll);
+        el.classList.toggle('metric-value-fit', !needsScroll);
+        el.scrollLeft = 0;
+        el.title = needsScroll ? `${el.textContent} (drag or swipe left/right to view)` : el.textContent;
 
-    if (!needsScroll || el.dataset.dragScrollReady === 'true') return;
-    el.dataset.dragScrollReady = 'true';
+        if (needsScroll && el.dataset.dragScrollReady !== 'true') {
+          el.dataset.dragScrollReady = 'true';
 
-    let pointerId = null;
-    let startX = 0;
-    let startScrollLeft = 0;
+          let pointerId = null;
+          let startX = 0;
+          let startScrollLeft = 0;
 
-    el.addEventListener('pointerdown', (event) => {
-      if (event.pointerType === 'mouse' && event.button !== 0) return;
-      if (el.scrollWidth <= el.clientWidth) return;
-      pointerId = event.pointerId;
-      startX = event.clientX;
-      startScrollLeft = el.scrollLeft;
-      el.setPointerCapture(event.pointerId);
+          el.addEventListener('pointerdown', (event) => {
+            if (event.pointerType === 'mouse' && event.button !== 0) return;
+            if (el.scrollWidth <= el.clientWidth) return;
+            pointerId = event.pointerId;
+            startX = event.clientX;
+            startScrollLeft = el.scrollLeft;
+            el.setPointerCapture(event.pointerId);
+          });
+
+          el.addEventListener('pointermove', (event) => {
+            if (pointerId !== event.pointerId) return;
+            const deltaX = event.clientX - startX;
+            el.scrollLeft = startScrollLeft - deltaX;
+            event.preventDefault();
+          });
+
+          const stop = (event) => {
+            if (pointerId !== null && event.pointerId !== undefined && event.pointerId !== pointerId) return;
+            pointerId = null;
+          };
+
+          el.addEventListener('pointerup', stop);
+          el.addEventListener('pointercancel', stop);
+          el.addEventListener('pointerleave', stop);
+        }
+        observer.unobserve(el);
+      }
     });
+  }, { threshold: 0.1 });
 
-    el.addEventListener('pointermove', (event) => {
-      if (pointerId !== event.pointerId) return;
-      const deltaX = event.clientX - startX;
-      el.scrollLeft = startScrollLeft - deltaX;
-      event.preventDefault();
-    });
-
-    const stop = (event) => {
-      if (pointerId !== null && event.pointerId !== undefined && event.pointerId !== pointerId) return;
-      pointerId = null;
-    };
-
-    el.addEventListener('pointerup', stop);
-    el.addEventListener('pointercancel', stop);
-    el.addEventListener('pointerleave', stop);
-  });
+  cards.forEach(card => observer.observe(card));
 }
 
 function setText(id, value) {

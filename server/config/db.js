@@ -172,11 +172,52 @@ if (dbUrl) {
       console.log("Migration: Added payment_received column to trips");
     }
 
-    const [tripAmountReceivedCols] = await pool.query(`SHOW COLUMNS FROM trips LIKE 'amount_received'`);
     if (tripAmountReceivedCols.length === 0) {
       await pool.query(`ALTER TABLE trips ADD COLUMN amount_received DECIMAL(12, 2) NOT NULL DEFAULT 0.00`);
       console.log("Migration: Added amount_received column to trips");
     }
+
+    // --- Performance Optimization Indices ---
+    const [existingIndexes] = await pool.query(`
+      SELECT INDEX_NAME, TABLE_NAME 
+      FROM information_schema.STATISTICS 
+      WHERE TABLE_SCHEMA = ?
+    `, [dbName]);
+
+    const hasIndex = (table, name) => existingIndexes.some(idx => idx.TABLE_NAME === table && idx.INDEX_NAME === name);
+
+    // Trips table indices
+    if (!hasIndex('trips', 'idx_trips_date')) {
+      await pool.query("CREATE INDEX idx_trips_date ON trips(trip_date)");
+      console.log("Migration: Added index on trips(trip_date)");
+    }
+    if (!hasIndex('trips', 'idx_trips_status')) {
+      await pool.query("CREATE INDEX idx_trips_status ON trips(status)");
+      console.log("Migration: Added index on trips(status)");
+    }
+    if (!hasIndex('trips', 'idx_trips_customer_id')) {
+      await pool.query("CREATE INDEX idx_trips_customer_id ON trips(customer_id)");
+      console.log("Migration: Added index on trips(customer_id)");
+    }
+
+    // Daily Expenses table index
+    if (!hasIndex('daily_expenses', 'idx_expenses_date')) {
+      await pool.query("CREATE INDEX idx_expenses_date ON daily_expenses(date)");
+      console.log("Migration: Added index on daily_expenses(date)");
+    }
+
+    // Customers table indices
+    if (!hasIndex('customers', 'idx_customers_due_date')) {
+      await pool.query("CREATE INDEX idx_customers_due_date ON customers(due_date)");
+      console.log("Migration: Added index on customers(due_date)");
+    }
+
+    // Maintenance Records index
+    if (!hasIndex('maintenance_records', 'idx_mtn_service_date')) {
+      await pool.query("CREATE INDEX idx_mtn_service_date ON maintenance_records(service_date)");
+      console.log("Migration: Added index on maintenance_records(service_date)");
+    }
+    // -----------------------------------------
 
   } catch (err) {
     console.error("MySQL connection/migration failed:", err.message);

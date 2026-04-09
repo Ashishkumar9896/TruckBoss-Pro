@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bihal-dashboard-v6';
+const CACHE_NAME = 'bihal-dashboard-v7';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -40,40 +40,40 @@ self.addEventListener('fetch', (event) => {
 
   if (isHtmlRequest || isScriptOrStyle) {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const resClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
+      caches.match(event.request).then((cached) => {
+        const networked = fetch(event.request)
+          .then((response) => {
             if (response.ok) {
-              cache.put(event.request, resClone);
+              const resClone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, resClone);
+              });
             }
-          });
-          return response;
-        })
-        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
+            return response;
+          })
+          .catch(() => cached);
+        
+        return cached || networked;
+      })
     );
     return;
   }
 
+  // Assets (images, fonts, etc.)
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        const resClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          if (response.status === 200 && event.request.url.startsWith('http')) {
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      
+      return fetch(event.request).then((response) => {
+        if (response.status === 200 && event.request.url.startsWith('http')) {
+          const resClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, resClone);
-          }
-        });
+          });
+        }
         return response;
-      })
-      .catch(() => {
-        return caches.match(event.request).then(response => {
-          if (response) {
-            return response;
-          }
-          return caches.match('/index.html');
-        });
-      })
+      });
+    })
   );
 });
 

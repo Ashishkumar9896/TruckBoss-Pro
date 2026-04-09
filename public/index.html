@@ -14,8 +14,12 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="preload" href="/bihal-logo.png" as="image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script src="/vendor/chart/chart.umd.js"></script>
   <!-- Leaflet Maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -25,6 +29,8 @@
 </head>
 
 <body>
+  <!-- Mobile overlay backdrop -->
+  <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
   <!-- Landing / Auth Page -->
   <section id="landingPage" class="auth-page">
@@ -32,7 +38,7 @@
     <div class="auth-branding">
       <div class="auth-branding-inner">
         <div style="margin-bottom: 1.5rem;">
-          <img src="/bihal-logo.png" alt="Bihal Supplier Logo" class="logo-auth" />
+          <img src="/bihal-logo.png" alt="Bihal Supplier Logo" class="logo-auth" fetchpriority="high" />
         </div>
         <h1>Bihal Supplier</h1>
         <p class="auth-tagline">Your Partner for Efficient Fleet Management</p>
@@ -137,7 +143,7 @@
 
         <div class="faq-item">
           <strong>How do I create admin or manager accounts?</strong>
-          <p>Go to the Ã¢Å¡â„¢Ã¯Â¸Â Settings menu (top-right cog icon) Ã¢â€ â€™ click <b>Add User</b>. You can choose the role (Admin or
+          <p>Go to the ⚙️ Settings menu (top-right cog icon) → click <b>Add User</b>. You can choose the role (Admin or
             Manager) when creating the account.</p>
         </div>
 
@@ -152,7 +158,7 @@
           <strong>How do I view Fuel Volume and Cost together?</strong>
           <p>In both the Dashboard and the Fuel Efficiency tab, the Fuel trend graphs are beautifully styled Bar Charts.
             Simply <b>hover your mouse</b> over any month's bar to see a sleek tooltip displaying both the Total Cost
-            (&#8377;) and the exact Volume (Liters) purchased.</p>
+            (₹) and the exact Volume (Liters) purchased.</p>
         </div>
 
         <div class="faq-item">
@@ -166,14 +172,11 @@
   </div>
 
   <!-- ========== MAIN APP ========== -->
-  <!-- Mobile overlay backdrop -->
-  <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
-
   <div id="dashboardPage" class="app" style="display:none">
     <aside class="sidebar" id="mainSidebar">
       <!-- Logo -->
       <div class="sidebar-logo">
-        <img src="/bihal-logo.png" alt="Bihal Supplier Logo" class="logo-sidebar" />
+        <img src="/bihal-logo.png" alt="Bihal Supplier" class="logo-sidebar" loading="lazy">
         <span class="logo-text" style="display:none;">Bihal Supplier</span>
       </div>
 
@@ -221,8 +224,7 @@
       <!-- Sidebar Footer -->
       <div class="sidebar-footer">
         <div class="sidebar-user">
-          <img src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff" alt="Avatar"
-            class="sidebar-avatar" id="sidebarAvatar">
+          <img id="sidebarAvatar" src="" alt="Avatar" class="sidebar-avatar" loading="lazy">
           <span class="sidebar-username" id="sidebarUsername">Admin</span>
         </div>
       </div>
@@ -258,8 +260,7 @@
           </div>
           <div class="user">
             <div class="user-avatar-dropdown" style="position:relative;display:inline-block;">
-              <img src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff" alt="Avatar" class="avatar"
-                id="userAvatar" onclick="toggleSettingsMenu(event)" style="cursor:pointer;">
+              <img id="userAvatar" src="" alt="User" class="avatar" loading="lazy" onclick="toggleSettingsMenu(event)" style="cursor:pointer;">
               <span id="username">Admin</span>
               <div id="settingsMenu" class="dropdown-menu"
                 style="right:0;left:auto;top:calc(100% + 10px);min-width:220px;">
@@ -1833,7 +1834,6 @@
 
       </div>
 
-      <!-- ===== MOBILE BOTTOM NAVIGATION ===== -->
       <nav class="mobile-bottom-nav" id="mobileBottomNav">
         <div class="nav-item active" id="botnav-dashboard" onclick="loadDashboard()">
           <i class="fa-solid fa-house"></i><span>Home</span>
@@ -1851,9 +1851,7 @@
           <i class="fa-solid fa-bars"></i><span>Menu</span>
         </div>
       </nav>
-
-  </div>
-  </main>
+    </main>
   </div>
 
   <!-- Customer Payment Modal -->
@@ -2011,7 +2009,7 @@
   <div id="toast" class="toast"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-  <script src="/app.js?v=21"></script>
+  <script src="/app.js?v=22"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
