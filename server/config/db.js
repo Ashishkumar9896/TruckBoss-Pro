@@ -172,6 +172,7 @@ if (dbUrl) {
       console.log("Migration: Added payment_received column to trips");
     }
 
+    const [tripAmountReceivedCols] = await pool.query(`SHOW COLUMNS FROM trips LIKE 'amount_received'`);
     if (tripAmountReceivedCols.length === 0) {
       await pool.query(`ALTER TABLE trips ADD COLUMN amount_received DECIMAL(12, 2) NOT NULL DEFAULT 0.00`);
       console.log("Migration: Added amount_received column to trips");
