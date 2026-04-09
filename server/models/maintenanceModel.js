@@ -5,7 +5,7 @@ async function getMaintenanceRecords(limit = 10, offset = 0) {
     `SELECT m.*, t.truck_no 
      FROM maintenance_records m 
      JOIN truck_details t ON m.truck_id = t.truck_id 
-     ORDER BY m.service_date DESC
+     ORDER BY m.service_date DESC, m.maintenance_id DESC
      LIMIT ? OFFSET ?`,
     [limit, offset]
   );

@@ -55,29 +55,29 @@ const CUSTOMER_SUMMARY_QUERY = `
     c.phone_no,
     c.address,
     COALESCE(tx.total_received, c.amount_paid, 0) AS amount_paid,
-    c.balance AS total_billed,
-    (COALESCE(tx.total_received, c.amount_paid, 0) - c.balance) AS net,
-    GREATEST(c.balance - COALESCE(tx.total_received, c.amount_paid, 0), 0) AS current_due,
-    GREATEST(COALESCE(tx.total_received, c.amount_paid, 0) - c.balance, 0) AS advance_amount,
+    COALESCE(ts.total_billed, c.balance, 0) AS total_billed,
+    (COALESCE(tx.total_received, c.amount_paid, 0) - COALESCE(ts.total_billed, c.balance, 0)) AS net,
+    GREATEST(COALESCE(ts.total_billed, c.balance, 0) - COALESCE(tx.total_received, c.amount_paid, 0), 0) AS current_due,
+    GREATEST(COALESCE(tx.total_received, c.amount_paid, 0) - COALESCE(ts.total_billed, c.balance, 0), 0) AS advance_amount,
     c.due_date,
     c.follow_up_notes,
     COALESCE(ts.total_trips, 0) AS total_trips,
     ts.last_trip_date,
     tx.last_payment_date,
     CASE
-      WHEN COALESCE(tx.total_received, c.amount_paid, 0) > c.balance THEN 'Advance'
-      WHEN GREATEST(c.balance - COALESCE(tx.total_received, c.amount_paid, 0), 0) = 0 THEN 'Paid'
+      WHEN COALESCE(tx.total_received, c.amount_paid, 0) > COALESCE(ts.total_billed, c.balance, 0) THEN 'Advance'
+      WHEN GREATEST(COALESCE(ts.total_billed, c.balance, 0) - COALESCE(tx.total_received, c.amount_paid, 0), 0) = 0 THEN 'Paid'
       WHEN c.due_date IS NOT NULL AND c.due_date < CURDATE() THEN 'Overdue'
       ELSE 'Partial'
     END AS payment_status,
     CASE
-      WHEN GREATEST(c.balance - COALESCE(tx.total_received, c.amount_paid, 0), 0) <= 0 THEN 'Settled'
+      WHEN GREATEST(COALESCE(ts.total_billed, c.balance, 0) - COALESCE(tx.total_received, c.amount_paid, 0), 0) <= 0 THEN 'Settled'
       WHEN DATEDIFF(CURDATE(), COALESCE(c.due_date, ts.last_trip_date, DATE(c.created_at))) <= 7 THEN '0-7 days'
       WHEN DATEDIFF(CURDATE(), COALESCE(c.due_date, ts.last_trip_date, DATE(c.created_at))) <= 30 THEN '8-30 days'
       ELSE '30+ days'
     END AS outstanding_age_bucket,
     CASE
-      WHEN GREATEST(c.balance - COALESCE(tx.total_received, c.amount_paid, 0), 0) <= 0 THEN NULL
+      WHEN GREATEST(COALESCE(ts.total_billed, c.balance, 0) - COALESCE(tx.total_received, c.amount_paid, 0), 0) <= 0 THEN NULL
       ELSE GREATEST(DATEDIFF(CURDATE(), COALESCE(c.due_date, ts.last_trip_date, DATE(c.created_at))), 0)
     END AS due_age_days
   FROM customers c
@@ -85,6 +85,7 @@ const CUSTOMER_SUMMARY_QUERY = `
     SELECT
       customer_id,
       COUNT(*) AS total_trips,
+      COALESCE(SUM(amount), 0) AS total_billed,
       MAX(trip_date) AS last_trip_date
     FROM trips
     WHERE customer_id IS NOT NULL
@@ -118,16 +119,34 @@ async function recalculateCustomerBalance(customerId) {
 }
 
 async function getDashboardStats() {
-  const [[customers]] = await pool.query("SELECT COUNT(*) AS count FROM customers WHERE 1");
+  const [[customers]] = await pool.query("SELECT COUNT(*) AS count FROM customers");
   const [[revenue]] = await pool.query("SELECT COALESCE(SUM(amount), 0) AS total FROM trips");
   const [[trucks]] = await pool.query("SELECT COUNT(*) AS count FROM truck_details");
   const [truckStatus] = await pool.query("SELECT status, COUNT(*) AS count FROM truck_details GROUP BY status");
   const [[trips]] = await pool.query("SELECT COUNT(*) AS count FROM trips");
   const [[drivers]] = await pool.query("SELECT COUNT(*) AS count FROM driver_details");
   const [[fuel]] = await pool.query("SELECT COALESCE(SUM(price), 0) AS total FROM fuel_details");
+  const [[maintenance]] = await pool.query("SELECT COALESCE(SUM(cost), 0) AS total FROM maintenance_records");
+  const [[dailyExp]] = await pool.query("SELECT COALESCE(SUM(amount), 0) AS total FROM daily_expenses WHERE type = 'Given'");
 
-  const profit = { total: Number(revenue.total) - Number(fuel.total) };
-  return { customers, revenue, expenses: { total: 0 }, profit, balance, trucks, truckStatus, trips, drivers, fuel };
+  const totalRevenue = Number(revenue.total);
+  const totalFuel = Number(fuel.total);
+  const totalMtn = Number(maintenance.total);
+  const totalDaily = Number(dailyExp.total);
+  
+  const totalExpenses = totalFuel + totalMtn + totalDaily;
+  const netProfit = totalRevenue - totalExpenses;
+
+  return { 
+    customers, 
+    revenue: { total: totalRevenue }, 
+    expenses: { total: totalExpenses, fuel: totalFuel, maintenance: totalMtn, daily: totalDaily }, 
+    profit: { total: netProfit }, 
+    trucks, 
+    truckStatus, 
+    trips, 
+    drivers 
+  };
 }
 
 async function getRevenueChart() {

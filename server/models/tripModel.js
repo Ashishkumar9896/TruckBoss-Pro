@@ -44,7 +44,7 @@ async function getTrips(filters, limit, offset) {
      LEFT JOIN driver_details d ON tr.driver_id = d.driver_id
      LEFT JOIN customers c ON tr.customer_id = c.customer_id
      ${whereClause}
-     ORDER BY tr.trip_date DESC
+     ORDER BY tr.trip_date DESC, tr.trip_id DESC
      LIMIT ? OFFSET ?`,
     [...values, limit, offset]
   );

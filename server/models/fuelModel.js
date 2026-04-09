@@ -27,7 +27,7 @@ async function getFuelRecords(limit = 10, offset = 0, filters = {}) {
      LEFT JOIN truck_details t ON f.truck_id = t.truck_id
      LEFT JOIN driver_details d ON f.driver_id = d.driver_id
      ${where}
-     ORDER BY f.fuel_date DESC
+     ORDER BY f.fuel_date DESC, f.fuel_id DESC
      LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );

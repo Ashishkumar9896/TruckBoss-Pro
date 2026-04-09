@@ -76,8 +76,14 @@ async function fetchTripAnalyticsRows(filters, pagination = {}) {
           SELECT COALESCE(SUM(price), 0)
           FROM fuel_details f
           WHERE f.truck_id = tr.truck_id
-            AND DATE(f.fuel_date) = DATE(tr.trip_date)
-        ) AS fuel_cost
+            AND f.fuel_date BETWEEN DATE_SUB(tr.trip_date, INTERVAL 1 DAY) AND DATE_ADD(tr.trip_date, INTERVAL 1 DAY)
+        ) AS fuel_cost,
+        (
+          SELECT COALESCE(SUM(cost), 0)
+          FROM maintenance_records m
+          WHERE m.truck_id = tr.truck_id
+            AND m.service_date BETWEEN DATE_SUB(tr.trip_date, INTERVAL 2 DAY) AND DATE_ADD(tr.trip_date, INTERVAL 2 DAY)
+        ) AS maintenance_cost
      FROM trips tr
      LEFT JOIN truck_details t ON tr.truck_id = t.truck_id
      LEFT JOIN driver_details d ON tr.driver_id = d.driver_id
@@ -145,6 +151,7 @@ async function getTripProfitability(req, res, next) {
       const baseAmount = Number(r.amount || 0);
       
       const fuel = Number(r.fuel_cost || 0);
+      const maintenance = Number(r.maintenance_cost || 0);
       const expectedPayment = getTripExpectedAmount(r);
       const settlement = (settlementMaps[r.customer_id || `trip-${r.trip_id}`] || {})[r.trip_id] || {
         expected_amount: Number(expectedPayment.toFixed(2)),
@@ -154,7 +161,7 @@ async function getTripProfitability(req, res, next) {
         pending_settlement_flag: expectedPayment > 0,
       };
 
-      const totalExpenses = fuel;
+      const totalExpenses = fuel + maintenance;
       const netProfit = baseAmount - totalExpenses;
       return {
         trip_id: r.trip_id,
@@ -179,6 +186,7 @@ async function getTripProfitability(req, res, next) {
         due_date: r.customer_due_date,
         expenses: {
           fuel_cost: fuel,
+          maintenance_cost: maintenance,
           total: Number(totalExpenses.toFixed(2)),
         },
         net_profit: Number(netProfit.toFixed(2)),

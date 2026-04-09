@@ -2438,7 +2438,7 @@ async function submitTrip(e) {
         showToast('Trip added', 'success');
       }
     }
-    cancelForm('tripForm'); resetTripForm(); fetchTrips();
+    cancelForm('tripForm'); resetTripForm(); appState.trips.page = 1; fetchTrips();
   } catch (err) { showToast(err.message, 'error'); }
 }
 
@@ -2751,7 +2751,9 @@ async function submitFuel(e) {
       await api('/api/fuel', { method: 'POST', body: JSON.stringify(body) });
       showToast('Fuel record added', 'success');
     }
-    cancelForm('fuelForm'); resetFuelForm(); loadFuel();
+    cancelForm('fuelForm'); resetFuelForm(); 
+    appState.fuel.page = 1; // Reset to page 1 to show new record
+    loadFuel();
   } catch (err) { showToast(err.message, 'error'); }
 }
 
@@ -3125,7 +3127,7 @@ async function submitMaintenance(e) {
     if (proofFile && result && result.proof_stored === false) {
       showToast('?? Record saved, but proof file could not be stored. Check Cloudinary settings.', 'error');
     }
-    cancelForm('maintenanceForm'); resetMaintenanceForm(); loadMaintenance();
+    cancelForm('maintenanceForm'); resetMaintenanceForm(); appState.maintenance.page = 1; loadMaintenance();
   } catch (err) { 
     console.error("Maintenance Submission Error:", err);
     showToast(err.message, 'error'); 
@@ -3267,8 +3269,21 @@ function initRealtime() {
   if (!token) return;
   if (!appState.socket) {
     appState.socket = io({ auth: { token } });
-    appState.socket.on('new_trip', () => { showToast('New trip recorded', 'success'); if (document.getElementById('view-trips').style.display === 'block') fetchTrips(); });
-    appState.socket.on('fuel_update', () => { showToast('Fuel updated', 'info'); if (document.getElementById('view-fuel').style.display === 'block') loadFuel(); if (document.getElementById('view-dashboard').style.display === 'block') loadDashboard(); });
+    appState.socket.on('new_trip', () => { 
+      showToast('New trip recorded', 'success'); 
+      if (document.getElementById('view-trips').style.display === 'block') {
+        appState.trips.page = 1; 
+        fetchTrips(); 
+      }
+    });
+    appState.socket.on('fuel_update', () => { 
+      showToast('Fuel updated', 'info'); 
+      if (document.getElementById('view-fuel').style.display === 'block') {
+        appState.fuel.page = 1; 
+        loadFuel(); 
+      }
+      if (document.getElementById('view-dashboard').style.display === 'block') loadDashboard(); 
+    });
     appState.socket.on('truck_location_update', (data) => {
       // Update the live GPS marker on the map if map view is active
       if (mapState.mainMap && data.latitude && data.longitude) {
