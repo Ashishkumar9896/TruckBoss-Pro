@@ -410,7 +410,9 @@ async function api(path, opts = {}) {
   if (!isFormData && !h['Content-Type']) h['Content-Type'] = 'application/json';
   const tk = localStorage.getItem('tbToken');
   if (tk) h.Authorization = `Bearer ${tk}`;
-  const r = await fetch(API + path, { ...opts, headers: h });
+    const method = (opts.method || 'GET').toUpperCase();
+  const finalPath = method === 'GET' ? (path + (path.includes('?') ? '&' : '?') + '_t=' + Date.now()) : path;
+  const r = await fetch(API + finalPath, { ...opts, headers: h });
   const raw = await r.text();
   let d = {};
   try {
@@ -1222,9 +1224,9 @@ async function loadTrucks() {
   try {
     const [trucks, trips, fuelAll, mtnAll] = await Promise.all([
       api('/api/trucks'),
-      api('/api/trips?page=1&limit=9999').catch(() => ({ data: [] })),
-      api('/api/fuel?page=1&limit=9999').catch(() => ({ data: [] })),
-      api('/api/maintenance?page=1&limit=9999').catch(() => ({ data: [] }))
+      api('/api/trips?page=1&limit=50').catch(() => ({ data: [] })),
+      api('/api/fuel?page=1&limit=50').catch(() => ({ data: [] })),
+      api('/api/maintenance?page=1&limit=50').catch(() => ({ data: [] }))
     ]);
     await populateTruckDriverSelect();
 
@@ -2438,7 +2440,7 @@ async function submitTrip(e) {
         showToast('Trip added', 'success');
       }
     }
-    cancelForm('tripForm'); resetTripForm(); appState.trips.page = 1; fetchTrips();
+    cancelForm('tripForm'); resetTripForm(); if(document.getElementById('tripFilterDate')) document.getElementById('tripFilterDate').value = ''; if(document.getElementById('tripFilterStatus')) document.getElementById('tripFilterStatus').value = ''; appState.trips.page = 1; fetchTrips();
   } catch (err) { showToast(err.message, 'error'); }
 }
 
@@ -2641,7 +2643,7 @@ async function fetchFuelData() {
     document.getElementById('fuelNextBtn').disabled = appState.fuel.page >= appState.fuel.totalPages;
 
     // Compute stats from all records (fetch all for stats if on page 1 with no filter)
-    const allRes = await api('/api/fuel?page=1&limit=9999');
+    const allRes = await api('/api/fuel?page=1&limit=50');
     const allRows = allRes.data || [];
     const totalLiters = allRows.reduce((s, r) => s + Number(r.liters || 0), 0);
     const totalCost   = allRows.reduce((s, r) => s + Number(r.price  || 0), 0);
@@ -2752,6 +2754,10 @@ async function submitFuel(e) {
       showToast('Fuel record added', 'success');
     }
     cancelForm('fuelForm'); resetFuelForm(); 
+    // Clear filters to ensure the new record is visible
+    if (document.getElementById('fuelFilterDate')) document.getElementById('fuelFilterDate').value = '';
+    const ftSel = document.getElementById('fuelFilterTruck');
+    if (ftSel) ftSel.value = '';
     appState.fuel.page = 1; // Reset to page 1 to show new record
     loadFuel();
   } catch (err) { showToast(err.message, 'error'); }
@@ -2953,7 +2959,7 @@ async function loadMaintenance() {
     document.getElementById('mtnNextBtn').disabled = appState.maintenance.page >= appState.maintenance.totalPages;
 
     // Populate stat cards
-    const allMtn = await api('/api/maintenance?page=1&limit=9999').catch(() => ({ data: [] }));
+    const allMtn = await api('/api/maintenance?page=1&limit=50').catch(() => ({ data: [] }));
     const allRows2 = allMtn.data || [];
     const totalCostAll = allRows2.reduce((s, r) => s + Number(r.cost || 0), 0);
     const now2 = new Date();

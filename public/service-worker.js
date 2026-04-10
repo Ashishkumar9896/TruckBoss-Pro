@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bihal-dashboard-v7';
+const CACHE_NAME = 'bihal-dashboard-v8';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -39,22 +39,19 @@ self.addEventListener('fetch', (event) => {
     requestUrl.pathname.endsWith('.json');
 
   if (isHtmlRequest || isScriptOrStyle) {
+    // Network-first: always try to get the latest version, fall back to cache
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        const networked = fetch(event.request)
-          .then((response) => {
-            if (response.ok) {
-              const resClone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, resClone);
-              });
-            }
-            return response;
-          })
-          .catch(() => cached);
-        
-        return cached || networked;
-      })
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const resClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, resClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
