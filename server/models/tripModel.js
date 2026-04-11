@@ -1,5 +1,10 @@
 const pool = require("../config/db");
 
+/**
+ * Utility: Dynamically constructs the SQL WHERE clause based on provided filters.
+ * @param {Object} filters - Filter criteria (driver, truck, customer, date, status).
+ * @returns {Object} { whereClause, values }
+ */
 function buildTripFilterClause(filters) {
   let whereClause = " WHERE 1=1";
   const values = [];
@@ -32,6 +37,13 @@ function buildTripFilterClause(filters) {
   return { whereClause, values };
 }
 
+/**
+ * Data Access: Retrieves a paginated list of trips from the database.
+ * @param {Object} filters - Filtering criteria.
+ * @param {number} limit - Number of records to return.
+ * @param {number} offset - Starting record offset.
+ * @returns {Promise<Array>} List of trip records.
+ */
 async function getTrips(filters, limit, offset) {
   const { whereClause, values } = buildTripFilterClause(filters);
   const [rows] = await pool.query(
@@ -51,6 +63,9 @@ async function getTrips(filters, limit, offset) {
   return rows;
 }
 
+/**
+ * Data Access: Counts total trips matching the filter criteria for pagination.
+ */
 async function getTripsCount(filters) {
   const { whereClause, values } = buildTripFilterClause(filters);
   const [[result]] = await pool.query(
@@ -64,6 +79,9 @@ async function getTripsCount(filters) {
   return result.totalTrips;
 }
 
+/**
+ * Data Access: Persists a new trip record.
+ */
 async function createTrip(truckId, driverId, customerId, amount, status, tripDate, materialType = null, quantity = null, destination = null, manualCustomerName = null) {
   const [result] = await pool.query(
     "INSERT INTO trips (truck_id, driver_id, customer_id, amount, status, trip_date, material_type, quantity, destination, manual_customer_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -72,12 +90,17 @@ async function createTrip(truckId, driverId, customerId, amount, status, tripDat
   return result;
 }
 
-
+/**
+ * Data Access: Retrieves the associated customer ID for a specific trip.
+ */
 async function getTripCustomerById(tripId) {
   const [rows] = await pool.query("SELECT customer_id FROM trips WHERE trip_id = ?", [tripId]);
   return rows;
 }
 
+/**
+ * Data Access: Updates an existing trip record and adjusts payment flags.
+ */
 async function updateTrip(id, truckId, driverId, customerId, amount, status, tripDate, materialType = null, quantity = null, destination = null, manualCustomerName = null) {
   const [result] = await pool.query(
     `UPDATE trips
@@ -117,12 +140,17 @@ async function updateTrip(id, truckId, driverId, customerId, amount, status, tri
   return result;
 }
 
-
+/**
+ * Data Access: Permanently deletes a trip record.
+ */
 async function deleteTrip(id) {
   const [result] = await pool.query("DELETE FROM trips WHERE trip_id = ?", [id]);
   return result;
 }
 
+/**
+ * Validation: Checks if an entity (driver, truck, or customer) has active trips.
+ */
 async function checkActiveTrips(entityType, entityId) {
   let column = '';
   if (entityType === 'driver') column = 'driver_id';

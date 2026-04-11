@@ -13,13 +13,20 @@ function extractLinkedTripId(notes) {
 }
 
 /**
- * Intelligent settlement logic that prioritizes direct payments while allowing
- * excess funds to flow into a general customer pool to cover other trips.
+ * Core settlement engine that calculates trip-level financial standing.
+ * It prioritizes direct payment linkage while allowing excess funds to flow into 
+ * a general customer pool, which is then used to cover outstanding balances for 
+ * other trips in chronological order.
+ * 
+ * @param {Array} trips - List of trip records for the customer.
+ * @param {Array} transactions - List of customer payments and receipts.
+ * @returns {Object} A map of trip IDs to their calculated settlement metadata.
  */
 function buildSettlementMap(trips, transactions) {
   const directPaymentsByTripId = {};
   let generalPool = 0;
 
+  // Distribute payments between direct trip links and the general credit pool.
   (transactions || []).forEach((tx) => {
     const linkedTripId = extractLinkedTripId(tx.notes);
     const amt = toNumber(tx.amount);
@@ -32,7 +39,7 @@ function buildSettlementMap(trips, transactions) {
 
   const settlementMap = {};
 
-  // Trips must be sorted by date and ID to ensure chronological settlement
+  // Sort trips chronologically by date and ID to ensure fair and accurate settlement.
   const sortedTrips = [...(trips || [])].sort((a, b) => {
     const dateA = new Date(a.trip_date).getTime();
     const dateB = new Date(b.trip_date).getTime();
@@ -44,14 +51,14 @@ function buildSettlementMap(trips, transactions) {
     const expected = getTripExpectedAmount(trip);
     const directReceived = toNumber(directPaymentsByTripId[trip.trip_id]);
     
-    // 1. Apply direct payment first
+    // Step 1: Apply direct payments tied specifically to this trip ID.
     let received = Math.min(expected, directReceived);
     
-    // 2. Add excess direct payment to the general pool (no money vanishes!)
+    // Step 2: Track excess funds from direct payments and redirect them to the general pool.
     const excess = Math.max(0, directReceived - expected);
     generalPool += excess;
 
-    // 3. Cover remaining balance from the general pool
+    // Step 3: Attempt to cover any remaining balance using available funds from the general pool.
     const remainingNeeded = Math.max(0, expected - received);
     if (remainingNeeded > 0) {
       const fromPool = Math.min(remainingNeeded, generalPool);

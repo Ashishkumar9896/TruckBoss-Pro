@@ -17,6 +17,9 @@ const {
 
 const { checkActiveTrips } = require("../models/tripModel");
 
+/**
+ * Controller: Retrieves a full list of active customers.
+ */
 async function listCustomers(req, res, next) {
   try {
     const rows = await getCustomers();
@@ -35,6 +38,9 @@ async function listOneTimeCustomers(req, res, next) {
   }
 }
 
+/**
+ * Controller: Retrieves a single customer by their unique ID.
+ */
 async function getCustomer(req, res, next) {
   try {
     const rows = await getCustomerById(req.params.id);
@@ -47,6 +53,10 @@ async function getCustomer(req, res, next) {
   }
 }
 
+/**
+ * Controller: Adds a new customer to the database.
+ * Supports initialization with opening balances and payment notes.
+ */
 async function addCustomer(req, res, next) {
   try {
     const { name, phone_no, address, amount_paid = 0, balance = 0, due_date, follow_up_notes } = req.body;
@@ -94,6 +104,10 @@ async function editCustomer(req, res, next) {
   }
 }
 
+/**
+ * Controller: Records a new payment received from a customer.
+ * Automatically initiates a balance recalculation for the customer account.
+ */
 async function addCustomerPaymentHandler(req, res, next) {
   try {
     const { amount, payment_method, notes, payment_date } = req.body;
@@ -136,6 +150,10 @@ async function listCustomerTransactions(req, res, next) {
   }
 }
 
+/**
+ * Controller: Generates a comprehensive financial ledger for a customer,
+ * including both billing (trips) and payments (receipts).
+ */
 async function getCustomerLedgerHandler(req, res, next) {
   try {
     const ledger = await getCustomerLedger(req.params.id);

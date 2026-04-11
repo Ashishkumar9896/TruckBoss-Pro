@@ -1,5 +1,8 @@
 const pool = require("../config/db");
 
+/**
+ * Data Access: Retrieves a full list of drivers ordered by creation date.
+ */
 async function getDrivers() {
   const [rows] = await pool.query("SELECT * FROM driver_details ORDER BY created_at DESC");
   return rows;
@@ -10,6 +13,9 @@ async function getDriverById(id) {
   return rows;
 }
 
+/**
+ * Data Access: Registers a new driver in the system.
+ */
 async function createDriver(name, phoneNo, address, salary) {
   const [result] = await pool.query(
     "INSERT INTO driver_details (name, phone_no, address, salary) VALUES (?, ?, ?, ?)",
@@ -31,6 +37,10 @@ async function deleteDriver(id) {
   return result;
 }
 
+/**
+ * Analytics: Calculates multi-dimensional performance scores for drivers.
+ * Factoring in trip count, revenue generated, and fuel consumption efficiency.
+ */
 async function getDriverPerformance() {
   const [rows] = await pool.query(`
     SELECT d.driver_id, d.name, 

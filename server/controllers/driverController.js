@@ -8,6 +8,9 @@ const {
 } = require("../models/driverModel");
 const { checkActiveTrips } = require("../models/tripModel");
 
+/**
+ * Controller: Retrieves a full list of drivers in the system.
+ */
 async function listDrivers(req, res, next) {
   try {
     const rows = await getDrivers();
@@ -29,6 +32,9 @@ async function getDriver(req, res, next) {
   }
 }
 
+/**
+ * Controller: Adds a new driver.
+ */
 async function addDriver(req, res, next) {
   try {
     const { name, phone_no, address, salary = 0 } = req.body;
@@ -65,6 +71,10 @@ async function editDriver(req, res, next) {
   }
 }
 
+/**
+ * Controller: Deletes a driver.
+ * Ensures the driver has no active trips before allowing deletion.
+ */
 async function removeDriver(req, res, next) {
   try {
     const hasActiveTrips = await checkActiveTrips('driver', req.params.id);
@@ -82,6 +92,10 @@ async function removeDriver(req, res, next) {
   }
 }
 
+/**
+ * Controller: Retrieves performance metrics for all drivers,
+ * including total trips completed and efficiency ratings.
+ */
 async function getPerformance(req, res, next) {
   try {
     const rows = await getDriverPerformance();

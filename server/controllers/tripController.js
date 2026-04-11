@@ -11,6 +11,10 @@ const { getIO } = require("../socket");
 const { getDriverById } = require("../models/driverModel");
 const { getTruckById } = require("../models/truckModel");
 
+/**
+ * Controller: Retrieves a paginated list of trips, optionally filtered by 
+ * driver, truck, customer, date, or status.
+ */
 async function listTrips(req, res, next) {
   try {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -39,6 +43,11 @@ async function listTrips(req, res, next) {
   }
 }
 
+/**
+ * Controller: Logic to add a new trip. 
+ * Automatically handles customer linkage and initiates balance recalculations.
+ * Broadcasts the new trip event via Socket.io.
+ */
 async function addTrip(req, res, next) {
   try {
     const {
@@ -93,6 +102,10 @@ async function addTrip(req, res, next) {
   }
 }
 
+/**
+ * Controller: Updates an existing trip's details.
+ * Manages balance recalculations for both previous and new customers if linkage changes.
+ */
 async function editTrip(req, res, next) {
   try {
     const { truck_id, driver_id, customer_id, amount, status, trip_date, material_type = null, quantity = null, destination = null, manual_customer_name = null } = req.body;
@@ -128,6 +141,10 @@ async function editTrip(req, res, next) {
   }
 }
 
+/**
+ * Controller: Deletes a trip record.
+ * Ensures customer totals are updated to remove the deleted trip's impact.
+ */
 async function removeTrip(req, res, next) {
   try {
     const existingRows = await getTripCustomerById(req.params.id);

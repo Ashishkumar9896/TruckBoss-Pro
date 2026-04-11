@@ -41,6 +41,10 @@ async function getTruck(req, res, next) {
   }
 }
 
+/**
+ * Controller: Registers a new truck unit.
+ * Ensures truck number is unique and handles initial driver assignment.
+ */
 async function addTruck(req, res, next) {
   try {
     const { truck_no, driver_id, status = "Available", maintenance = "Not Required" } = req.body;
@@ -48,7 +52,10 @@ async function addTruck(req, res, next) {
       return res.status(400).json({ error: "Truck number is required" });
     }
 
-    const result = await createTruck(truck_no, driver_id || null, status, maintenance);
+    // Normalize driver_id: handle empty strings, 'null' string, or 0 as database NULL.
+    const normalizedDriverId = (driver_id === "" || driver_id === "null" || driver_id === 0 || driver_id === "0") ? null : driver_id;
+
+    const result = await createTruck(truck_no, normalizedDriverId, status, maintenance);
     return res.status(201).json({ truck_id: result.insertId, message: "Truck created" });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -58,16 +65,30 @@ async function addTruck(req, res, next) {
   }
 }
 
+/**
+ * Controller: Updates an existing truck record.
+ * Supports partial updates and handles driver unassignment explicitly.
+ */
 async function editTruck(req, res, next) {
   try {
     const { truck_no, driver_id, status, maintenance, latitude, longitude, location } = req.body;
-    const result = await updateTruck(req.params.id, truck_no, driver_id || null, status, maintenance);
+    
+    // Integrity Check: Ensure we have enough data to perform a safe update.
+    if (!truck_no) {
+      return res.status(400).json({ error: "Truck number is required for update integrity" });
+    }
+
+    // Normalize driver_id: handle empty strings, 'null' string, or 0 as database NULL.
+    // This allows for explicit unassignment from the frontend.
+    const normalizedDriverId = (driver_id === "" || driver_id === "null" || driver_id === 0 || driver_id === "0" || driver_id === null) ? null : driver_id;
+
+    const result = await updateTruck(req.params.id, truck_no, normalizedDriverId, status, maintenance);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Truck not found" });
     }
 
-    const hasLocationUpdate =
-      latitude !== undefined || longitude !== undefined || location !== undefined;
+    // Real-time notification logic for location/telemetry updates
+    const hasLocationUpdate = latitude !== undefined || longitude !== undefined || location !== undefined;
     if (hasLocationUpdate) {
       const io = getIO();
       if (io) {
@@ -82,7 +103,7 @@ async function editTruck(req, res, next) {
       }
     }
 
-    return res.json({ message: "Truck updated" });
+    return res.json({ message: "Truck updated successfully" });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
       return res.status(409).json({ error: "Truck number already exists" });

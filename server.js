@@ -27,11 +27,13 @@ const { initSocket } = require("./server/socket");
 const app = express();
 const server = http.createServer(app);
 
-// Trust Render's reverse proxy so express-rate-limit can correctly
-// identify client IPs via the X-Forwarded-For header.
+/**
+ * Trust the reverse proxy (e.g., Render, Nginx) to ensure the rate limiter
+ * correctly identifies client IPs via the X-Forwarded-For header.
+ */
 app.set('trust proxy', 1);
 
-// Enable Gzip compression for faster data transfer
+// Enable Gzip compression to optimize payload size and transfer speeds.
 app.use(compression());
 
 const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
@@ -40,7 +42,9 @@ initSocket(server);
 const cron = require("node-cron");
 const backupDatabase = require("./server/scripts/backup");
 
-// Schedule database backup every day at 02:00 AM
+/**
+ * Schedule a full database backup daily at 02:00 AM.
+ */
 cron.schedule("0 2 * * *", async () => {
   try {
     await backupDatabase();
@@ -49,10 +53,14 @@ cron.schedule("0 2 * * *", async () => {
   }
 });
 
-// The current frontend uses CDN scripts and inline handlers; disable CSP for compatibility.
+/**
+ * Deployment Configuration:
+ * Disable strict Content Security Policy (CSP) to maintain compatibility 
+ * with legacy CDN scripts and inline event handlers used in the frontend.
+ */
 app.use(helmet({ contentSecurityPolicy: false }));
 
-// Build allowed origins list, including Render's external URL if provided.
+// Configure CORS allowed origins based on environment settings and deployment platform.
 const allowedOrigins = [
   ...frontendOrigin.split(",").map((o) => o.trim()),
   process.env.RENDER_EXTERNAL_URL,
@@ -82,7 +90,11 @@ app.use(
   })
 );
 app.use(express.json({ limit: "10kb" }));
-// Prevent browser caching of app.js so code updates take effect immediately
+/**
+ * Static Asset Management:
+ * Specific route for app.js to bypass browser caching. This ensures client-side
+ * logic updates are applied immediately upon deployment.
+ */
 app.get('/app.js', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
@@ -90,13 +102,13 @@ app.get('/app.js', (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, "public"), {
-  maxAge: '1d', // Cache static assets for 1 day for speed
+  maxAge: '1d', // Cache static assets for 24 hours to improve repeat-load performance.
   etag: true
 }));
 app.use("/vendor/chart", express.static(path.join(__dirname, "node_modules", "chart.js", "dist")));
 
 const rateLimitWindowMs = 15 * 60 * 1000;
-// Increased default rate limit to 2000 for a smoother experience
+// Global API rate limiting configuration.
 const apiRateLimitMax = Number(process.env.API_RATE_LIMIT_MAX || 2000);
 
 const authLimiter = rateLimit({
@@ -116,7 +128,11 @@ const apiLimiter = rateLimit({
   message: { error: "Too many requests, please try again later." },
 });
 
-// Apply API-wide limiter first, then stricter limiter for auth endpoints.
+/**
+ * Route Middleware Application:
+ * Apply the general API limiter first, followed by stricter limits
+ * on high-sensitivity authentication endpoints.
+ */
 app.use("/api", apiLimiter);
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);

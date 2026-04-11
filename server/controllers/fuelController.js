@@ -6,6 +6,9 @@ const {
 } = require("../models/fuelModel");
 const { getIO } = require("../socket");
 
+/**
+ * Controller: Retrieves a paginated and filtered list of fuel records.
+ */
 async function listFuel(req, res, next) {
   try {
     const limit  = parseInt(req.query.limit)  || 10;
@@ -29,6 +32,10 @@ async function listFuel(req, res, next) {
   }
 }
 
+/**
+ * Controller: Records a new fuel expense for a specific truck and driver.
+ * Broadcasts updates via Socket.io for real-time dashboard reflecting.
+ */
 async function addFuel(req, res, next) {
   try {
     const { truck_id, driver_id, liters, price, fuel_date } = req.body;
@@ -75,6 +82,9 @@ async function removeFuel(req, res, next) {
   }
 }
 
+/**
+ * Controller: Updates an existing fuel record.
+ */
 async function updateFuel(req, res, next) {
   try {
     const { truck_id, driver_id, liters, price, fuel_date } = req.body;

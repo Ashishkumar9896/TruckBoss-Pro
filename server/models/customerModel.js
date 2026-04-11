@@ -101,6 +101,10 @@ const CUSTOMER_SUMMARY_QUERY = `
   ) tx ON c.customer_id = tx.customer_id
 `;
 
+/**
+ * Data Access: Recalculates the total billed balance for a customer based on their trips.
+ * Ensures the 'customers' table remains in sync with the 'trips' audit trail.
+ */
 async function recalculateCustomerBalance(customerId) {
   if (!customerId) return;
   await pool.query(
@@ -118,6 +122,10 @@ async function recalculateCustomerBalance(customerId) {
   );
 }
 
+/**
+ * Analytics: Aggregates comprehensive multi-module statistics for the landing dashboard.
+ * Projects revenue, expenses (fuel + maintenance), and net profit.
+ */
 async function getDashboardStats() {
   const [[customers]] = await pool.query("SELECT COUNT(*) AS count FROM customers");
   const [[revenue]] = await pool.query("SELECT COALESCE(SUM(amount), 0) AS total FROM trips");
@@ -154,6 +162,10 @@ async function getRevenueChart() {
   return rows;
 }
 
+/**
+ * Data Access: Retrieves a full list of customers with calculated financial summaries
+ * and payment status flags.
+ */
 async function getCustomers() {
   const [rows] = await pool.query(
     `${CUSTOMER_SUMMARY_QUERY}
@@ -195,6 +207,10 @@ async function getOneTimeCustomers() {
   }));
 }
 
+/**
+ * Data Access: Registers a new customer and initializes an opening transaction record.
+ * Uses a transactional approach to ensure data integrity across customer and ledger tables.
+ */
 async function createCustomer(name, phoneNo, address, amountPaid, balance, dueDate, followUpNotes) {
   const conn = await pool.getConnection();
   try {
@@ -239,6 +255,10 @@ async function updateCustomer(id, name, phoneNo, address, amountPaid, balance, d
   return result;
 }
 
+/**
+ * Data Access: Processes a customer payment receipt.
+ * Updates the audit ledger (customer_transactions) and increments the total paid amount.
+ */
 async function addCustomerPayment(customerId, amount, paymentMethod, notes, paymentDate) {
   const conn = await pool.getConnection();
   try {

@@ -5,6 +5,9 @@ const pool = require("../config/db");
 const https = require("https");
 const http = require("http");
 
+/**
+ * Controller: Retrieves a paginated list of maintenance records.
+ */
 exports.getMaintenance = async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
@@ -23,6 +26,11 @@ exports.getMaintenance = async (req, res, next) => {
   }
 };
 
+/**
+ * Controller: Records a new maintenance entry.
+ * Supports file uploads for proof documents (receipts/bills) and automatically
+ * clears the associated truck's maintenance status note.
+ */
 exports.addMaintenance = async (req, res, next) => {
   try {
     const { truck_id, service_date, cost, description } = req.body;
@@ -69,6 +77,10 @@ exports.deleteMaintenance = async (req, res, next) => {
   }
 };
 
+/**
+ * Controller: Handles proof document retrieval.
+ * Proxies external storage (Cloudinary) or serves local files securely.
+ */
 exports.viewProof = async (req, res, next) => {
   try {
     const [[record]] = await pool.query(

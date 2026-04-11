@@ -3,9 +3,13 @@ const mysql = require("mysql2/promise");
 const dbUrl = process.env.DATABASE_URL || process.env.MYSQL_URL;
 let pool;
 
+/**
+ * Database Connection Configuration:
+ * Support for both individual environment variables and consolidated 
+ * connection strings (common in cloud environments like Render/Railway).
+ * dateStrings is enabled to ensure MySQL DATE/DATETIME are returned as strings.
+ */
 if (dbUrl) {
-  // If a connection string is provided, we use it.
-  // We append dateStrings=true to ensure proper date handling if not already present.
   const separator = dbUrl.includes('?') ? '&' : '?';
   pool = mysql.createPool(dbUrl + separator + "dateStrings=true");
 } else {
@@ -22,7 +26,7 @@ if (dbUrl) {
   };
 
   if (process.env.DB_SSL === "true") {
-    // For many cloud providers, we need to enable SSL.
+    // Enable SSL for secure connections to cloud database providers.
     poolConfig.ssl = { rejectUnauthorized: true };
   }
   
@@ -31,12 +35,11 @@ if (dbUrl) {
 
 (async () => {
   try {
-    // Basic connectivity check
+    // Validate database connectivity on startup.
     await pool.query("SELECT 1");
-    console.log("MySQL connected successfully");
+    console.log("MySQL connection established successfully.");
 
-    // For migrations, we might need the database name.
-    // We try to get it from the pool itself if possible, or from ENV.
+    // Retrieve database name for metadata-dependent migrations.
     const dbName = process.env.DB_NAME || "trucks";
 
     const [columns] = await pool.query("SHOW COLUMNS FROM trips");
@@ -178,7 +181,11 @@ if (dbUrl) {
       console.log("Migration: Added amount_received column to trips");
     }
 
-    // --- Performance Optimization Indices ---
+    /**
+     * Database Performance Optimization:
+     * Ensure critical indices exist on frequently queried and joined columns
+     * to maintain high performance as the dataset grows.
+     */
     const [existingIndexes] = await pool.query(`
       SELECT INDEX_NAME, TABLE_NAME 
       FROM information_schema.STATISTICS 

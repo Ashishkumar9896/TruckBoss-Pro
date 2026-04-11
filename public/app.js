@@ -1,5 +1,17 @@
+/**
+ * Fleet Manager Client Application
+ * @module App
+ */
+
+// Base API endpoint configuration
 const API = "";
 
+/**
+ * Debounce utility to limit the rate at which a function can fire.
+ * @param {Function} fn - The function to debounce.
+ * @param {number} delay - The delay in milliseconds.
+ * @returns {Function} A debounced version of the function.
+ */
 const debounce = (fn, delay) => {
   let timeout;
   return (...args) => {
@@ -8,6 +20,12 @@ const debounce = (fn, delay) => {
   };
 };
 
+/**
+ * Throttle utility to ensure a function is only called once per specified limit.
+ * @param {Function} fn - The function to throttle.
+ * @param {number} limit - The time limit in milliseconds.
+ * @returns {Function} A throttled version of the function.
+ */
 const throttle = (fn, limit) => {
   let inThrottle;
   return (...args) => {
@@ -34,7 +52,10 @@ function openModal(id) { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 function switchModal(from, to) { closeModal(from); openModal(to); }
 
-// Theme management: apply and toggle light/dark mode
+/**
+ * Theme & Cosmetic Management:
+ * Handles switching and persistence of light/dark modes.
+ */
 function applyTheme(theme) {
   const icon = document.getElementById('themeIcon');
   if (theme === 'light') {
@@ -787,11 +808,22 @@ function focusNotificationTarget(type, id) {
   }
 }
 
-/* ==============================
-  DASHBOARD SECTION
-  ============================== */
+/* ==========================================================================
+   Dashboard Section
+   ========================================================================== */
 let revenueChart = null, fuelTrendChart = null;
 
+/**
+ * Component: Generates a standardized alert/activity card for the dashboard.
+ * @param {Object} props - Card properties.
+ * @param {string} props.icon - FontAwesome icon class.
+ * @param {string} props.title - Card title.
+ * @param {string} [props.meta] - Metadata or subtitle text.
+ * @param {string} [props.description] - Detailed description or secondary text.
+ * @param {string} [props.tone] - Visual tone (warning, danger, etc.).
+ * @param {string} [props.onClick] - Inline click handler string.
+ * @returns {string} HTML string for the component.
+ */
 function buildDashboardAlertCard({ icon, title, meta = '', description = '', tone = 'warning', onClick = '' }) {
   const toneClass = tone === 'danger' ? 'alert-warning-danger' : '';
   const metaHtml = meta ? `<div class="alert-warning-meta">${meta}</div>` : '';
@@ -853,6 +885,10 @@ function buildRecentActivityAlertCard(item) {
   });
 }
 
+/**
+ * Orchestrator: Fetches and updates the dashboard with the latest fleet metrics,
+ * financial analytics, and operational alerts.
+ */
 async function loadDashboard() {
   switchView('dashboard');
   const c = document.getElementById('view-dashboard');
@@ -1007,6 +1043,7 @@ async function loadDashboard() {
       alertItems.push(...recentActivityItems);
     }
 
+    // Decision widgets: Process data for charts and trend cards.
     if (alertItems.length) {
       const summaryText = alertItems.length > 5
         ? 'Scroll to view alerts and recent operational updates'
@@ -1216,6 +1253,9 @@ function renderCharts(rev, fuel) {
 /* ==============================
   TRUCKS CRUD SECTION
   ============================== */
+/**
+ * Service: Retrieves and renders the full fleet directory with real-time status updates.
+ */
 async function loadTrucks() {
   switchView('trucks');
   const tbody = document.getElementById('trucksTableBody');
@@ -1323,7 +1363,13 @@ async function populateTruckDriverSelect() {
 async function submitTruck(e) {
   e.preventDefault();
   const id = document.getElementById('trkId').value;
-  const body = { truck_no: document.getElementById('trkNo').value, driver_id: document.getElementById('trkDriver').value || null, status: document.getElementById('trkStatus').value, maintenance: document.getElementById('trkMaintenance').value };
+  const driverId = (document.getElementById('trkDriver').value === "" || document.getElementById('trkDriver').value === "null") ? null : document.getElementById('trkDriver').value;
+  const body = { 
+    truck_no: document.getElementById('trkNo').value, 
+    driver_id: driverId, 
+    status: document.getElementById('trkStatus').value, 
+    maintenance: document.getElementById('trkMaintenance').value 
+  };
   try {
     if (id) { await api(`/api/trucks/${id}`, { method: 'PUT', body: JSON.stringify(body) }); showToast('Truck updated', 'success'); }
     else { await api('/api/trucks', { method: 'POST', body: JSON.stringify(body) }); showToast('Truck added', 'success'); }
@@ -1676,6 +1722,10 @@ function renderBillingTrend(groups) {
   }).join('');
 }
 
+/**
+ * Orchestrator: Renders deep customer financial insights and activity trends.
+ * @param {Object} insights - The insight data retrieved from the server.
+ */
 function renderCustomerInsights(insights) {
   const summary = insights && insights.summary ? insights.summary : {};
   const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
@@ -2296,6 +2346,14 @@ async function loadTrips() {
   fetchTrips();
 }
 
+/**
+ * Service: Core data fetching logic for trips.
+ * Handles pagination, complex multi-field filtering, and client-side sorting.
+ */
+/**
+ * Service: Retrieves and renders the trip ledger.
+ * Implements server-side pagination, sorting, and multi-criteria filtering.
+ */
 async function fetchTrips() {
   const tbody = document.getElementById('tripsTableBody');
   const tc = tbody.closest('.table-responsive');
@@ -2392,6 +2450,11 @@ async function fetchTrips() {
   } catch (err) { tbody.innerHTML = errorRow(9); } finally { hideLoading(tc); }
 }
 
+/**
+ * Controller: Handles the submission of trip records.
+ * Manages one-time customer logic and triggers driver credential generation for new drivers.
+ * @param {Event} e - Form submission event.
+ */
 async function submitTrip(e) {
   e.preventDefault();
   const id = document.getElementById('trpId').value;
@@ -3104,6 +3167,11 @@ async function logMaintenanceForTruck(truckId, truckNo, note) {
   form.scrollIntoView({ behavior: 'smooth' });
 }
 
+/**
+ * Controller: Handles the submission of maintenance records, including multipart/form-data
+ * for physical document proof (Cloudinary/Local).
+ * @param {Event} e - Form submission event.
+ */
 async function submitMaintenance(e) {
   e.preventDefault();
   const id = document.getElementById('mtnId').value;
@@ -3748,6 +3816,11 @@ function startSharingFromPicker() {
   shareMyLocation(_sharingTruckId);
 }
 
+/**
+ * Service: Enables live GPS broadcasting for a specific truck.
+ * Utilizes the browser's Geolocation API to push updates via the high-frequency location tunnel.
+ * @param {number} truckId - Database ID of the truck to track.
+ */
 function shareMyLocation(truckId) {
   if (!navigator.geolocation) { showToast('GPS not supported on this device', 'error'); return; }
   showToast('?? Starting GPS sharing…', 'info');
@@ -3903,9 +3976,13 @@ function triggerInstall() {
   }
 }
 
-/* ------------------------------------------
-   EXPENSES VIEW
-   ------------------------------------------ */
+/* ==========================================================================
+   Daily Operational Expenses
+   ========================================================================== */
+
+/**
+ * Service: Manages general cash flow and petty expenses categorization.
+ */
 async function loadExpenses() {
   switchView('expenses');
   const filterDateInput = document.getElementById('expenseFilterDate');
